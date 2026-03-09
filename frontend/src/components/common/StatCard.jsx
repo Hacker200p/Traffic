@@ -1,0 +1,6 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import clsx from 'clsx';
+import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/solid';
+export default function StatCard({ title, value, subtitle, icon, trend, className }) {
+    return (_jsxs("div", { className: clsx('rounded-xl border border-dark-700 bg-dark-800/50 p-5 backdrop-blur-sm', className), children: [_jsxs("div", { className: "flex items-start justify-between", children: [_jsxs("div", { children: [_jsx("p", { className: "text-sm font-medium text-dark-400", children: title }), _jsx("p", { className: "mt-1 text-2xl font-bold text-white", children: value }), subtitle && _jsx("p", { className: "mt-0.5 text-xs text-dark-500", children: subtitle })] }), icon && (_jsx("div", { className: "flex h-10 w-10 items-center justify-center rounded-lg bg-primary-600/10 text-primary-400", children: icon }))] }), trend && (_jsxs("div", { className: "mt-3 flex items-center gap-1 text-xs", children: [trend.value >= 0 ? (_jsx(ArrowUpIcon, { className: "h-3 w-3 text-emerald-400" })) : (_jsx(ArrowDownIcon, { className: "h-3 w-3 text-red-400" })), _jsxs("span", { className: trend.value >= 0 ? 'text-emerald-400' : 'text-red-400', children: [Math.abs(trend.value), "%"] }), _jsx("span", { className: "text-dark-500", children: trend.label })] }))] }));
+}

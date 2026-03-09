@@ -1,0 +1,17 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.trackingRouter = void 0;
+const express_1 = require("express");
+const tracking_controller_1 = require("./tracking.controller");
+const auth_middleware_1 = require("../../middleware/auth.middleware");
+const rbac_middleware_1 = require("../../middleware/rbac.middleware");
+const validate_middleware_1 = require("../../middleware/validate.middleware");
+const tracking_validation_1 = require("./tracking.validation");
+const router = (0, express_1.Router)();
+exports.trackingRouter = router;
+router.use(auth_middleware_1.authenticate);
+router.post('/', (0, rbac_middleware_1.authorize)('admin', 'police'), (0, validate_middleware_1.validate)(tracking_validation_1.trackingPointSchema), tracking_controller_1.trackingController.recordPoint);
+router.post('/batch', (0, rbac_middleware_1.authorize)('admin', 'police'), (0, validate_middleware_1.validate)(tracking_validation_1.trackingBatchSchema), tracking_controller_1.trackingController.recordBatch);
+router.get('/history', (0, rbac_middleware_1.authorize)('admin', 'police', 'analyst'), (0, validate_middleware_1.validate)(tracking_validation_1.trackingQuerySchema, 'query'), tracking_controller_1.trackingController.getHistory);
+router.get('/latest', (0, rbac_middleware_1.authorize)('admin', 'police', 'analyst'), tracking_controller_1.trackingController.getLatestPositions);
+router.get('/geofence', (0, rbac_middleware_1.authorize)('admin', 'police'), (0, validate_middleware_1.validate)(tracking_validation_1.geofenceQuerySchema, 'query'), tracking_controller_1.trackingController.getVehiclesInRadius);

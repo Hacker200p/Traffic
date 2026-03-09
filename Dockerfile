@@ -3,30 +3,14 @@
 # Node 20 LTS on Alpine for minimal attack surface
 # =============================================================================
 
-# ── Stage 1: dependency install (cached unless package-lock changes) ─────────
-FROM node:20-alpine AS deps
-
-WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci --ignore-scripts && npm cache clean --force
-
-# ── Stage 2: build TypeScript ────────────────────────────────────────────────
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY package.json tsconfig.json ./
-COPY src/ ./src/
-RUN npm run build
-
-# ── Stage 3: production-only dependencies ────────────────────────────────────
+# ── Stage 1: production-only dependencies ────────────────────────────────────
 FROM node:20-alpine AS prod-deps
 
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
-# ── Stage 4: final runtime image ────────────────────────────────────────────
+# ── Stage 2: final runtime image ────────────────────────────────────────────
 FROM node:20-alpine AS runtime
 
 # dumb-init for proper PID 1 signal handling; wget for healthcheck
@@ -42,12 +26,8 @@ RUN addgroup -g 1001 -S appgroup && \
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY package.json ./
 
-# Compiled output
-COPY --from=builder /app/dist ./dist
-
-# Database schema & migrations (needed by migrate script)
-COPY src/database/schema.sql            ./dist/database/schema.sql
-COPY src/database/migrations/           ./dist/database/migrations/
+# Application source
+COPY src/ ./src/
 
 # Logs directory owned by appuser
 RUN mkdir -p /app/logs && chown -R appuser:appgroup /app
@@ -71,4 +51,4 @@ LABEL org.opencontainers.image.title="traffic-backend" \
       org.opencontainers.image.version="1.0.0"
 
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "dist/server.js"]
+CMD ["node", "src/server.js"]

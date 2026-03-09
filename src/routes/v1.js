@@ -1,0 +1,21 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.apiV1Router = void 0;
+const express_1 = require("express");
+const auth_routes_1 = require("../modules/auth/auth.routes");
+const vehicles_routes_1 = require("../modules/vehicles/vehicles.routes");
+const violations_routes_1 = require("../modules/violations/violations.routes");
+const tracking_routes_1 = require("../modules/tracking/tracking.routes");
+const alerts_routes_1 = require("../modules/alerts/alerts.routes");
+const signals_routes_1 = require("../modules/traffic-signals/signals.routes");
+const integration_routes_1 = require("../modules/integration/integration.routes");
+const router = (0, express_1.Router)();
+exports.apiV1Router = router;
+router.use('/auth', auth_routes_1.authRouter);
+router.use('/vehicles', vehicles_routes_1.vehiclesRouter);
+router.use('/violations', violations_routes_1.violationsRouter);
+router.use('/tracking', tracking_routes_1.trackingRouter);
+router.use('/alerts', alerts_routes_1.alertsRouter);
+router.use('/signals', signals_routes_1.signalsRouter);
+// AI microservice integration (service-to-service, API-key auth)
+router.use('/integration', integration_routes_1.integrationRouter);

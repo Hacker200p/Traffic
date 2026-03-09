@@ -1,0 +1,18 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.vehiclesRouter = void 0;
+const express_1 = require("express");
+const vehicles_controller_1 = require("./vehicles.controller");
+const auth_middleware_1 = require("../../middleware/auth.middleware");
+const rbac_middleware_1 = require("../../middleware/rbac.middleware");
+const validate_middleware_1 = require("../../middleware/validate.middleware");
+const vehicles_validation_1 = require("./vehicles.validation");
+const router = (0, express_1.Router)();
+exports.vehiclesRouter = router;
+router.use(auth_middleware_1.authenticate);
+router.post('/', (0, rbac_middleware_1.authorize)('admin', 'police'), (0, validate_middleware_1.validate)(vehicles_validation_1.createVehicleSchema), vehicles_controller_1.vehiclesController.create);
+router.get('/', (0, rbac_middleware_1.authorize)('admin', 'police', 'analyst'), (0, validate_middleware_1.validate)(vehicles_validation_1.vehicleQuerySchema, 'query'), vehicles_controller_1.vehiclesController.findAll);
+router.get('/plate/:plateNumber', (0, rbac_middleware_1.authorize)('admin', 'police'), vehicles_controller_1.vehiclesController.findByPlate);
+router.get('/:id', (0, rbac_middleware_1.authorize)('admin', 'police', 'analyst'), vehicles_controller_1.vehiclesController.findById);
+router.patch('/:id', (0, rbac_middleware_1.authorize)('admin', 'police'), (0, validate_middleware_1.validate)(vehicles_validation_1.updateVehicleSchema), vehicles_controller_1.vehiclesController.update);
+router.delete('/:id', (0, rbac_middleware_1.authorize)('admin'), vehicles_controller_1.vehiclesController.delete);

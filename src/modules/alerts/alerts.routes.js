@@ -1,0 +1,17 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.alertsRouter = void 0;
+const express_1 = require("express");
+const alerts_controller_1 = require("./alerts.controller");
+const auth_middleware_1 = require("../../middleware/auth.middleware");
+const rbac_middleware_1 = require("../../middleware/rbac.middleware");
+const validate_middleware_1 = require("../../middleware/validate.middleware");
+const alerts_validation_1 = require("./alerts.validation");
+const router = (0, express_1.Router)();
+exports.alertsRouter = router;
+router.use(auth_middleware_1.authenticate);
+router.post('/', (0, rbac_middleware_1.authorize)('admin', 'police'), (0, validate_middleware_1.validate)(alerts_validation_1.createAlertSchema), alerts_controller_1.alertsController.create);
+router.get('/', (0, rbac_middleware_1.authorize)('admin', 'police', 'analyst'), (0, validate_middleware_1.validate)(alerts_validation_1.alertQuerySchema, 'query'), alerts_controller_1.alertsController.findAll);
+router.get('/active-count', (0, rbac_middleware_1.authorize)('admin', 'police', 'analyst'), alerts_controller_1.alertsController.getActiveCount);
+router.get('/:id', (0, rbac_middleware_1.authorize)('admin', 'police', 'analyst'), alerts_controller_1.alertsController.findById);
+router.patch('/:id', (0, rbac_middleware_1.authorize)('admin', 'police'), (0, validate_middleware_1.validate)(alerts_validation_1.updateAlertSchema), alerts_controller_1.alertsController.update);

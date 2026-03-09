@@ -1,0 +1,8 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+export default function ConfirmDialog({ open, title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', onConfirm, onCancel, destructive, }) {
+    return (_jsxs(Dialog, { open: open, onClose: onCancel, className: "relative z-50", children: [_jsx("div", { className: "fixed inset-0 bg-black/60 backdrop-blur-sm", "aria-hidden": true }), _jsx("div", { className: "fixed inset-0 flex items-center justify-center p-4", children: _jsxs(DialogPanel, { className: "w-full max-w-md rounded-2xl border border-dark-700 bg-dark-800 p-6 shadow-2xl", children: [_jsxs("div", { className: "flex items-start gap-4", children: [_jsx("div", { className: "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-red-500/10", children: _jsx(ExclamationTriangleIcon, { className: "h-5 w-5 text-red-400" }) }), _jsxs("div", { children: [_jsx(DialogTitle, { className: "text-lg font-semibold text-white", children: title }), _jsx("p", { className: "mt-2 text-sm text-dark-300", children: message })] })] }), _jsxs("div", { className: "mt-6 flex justify-end gap-3", children: [_jsx("button", { onClick: onCancel, className: "rounded-lg border border-dark-600 px-4 py-2 text-sm font-medium text-dark-300 hover:bg-dark-700", children: cancelLabel }), _jsx("button", { onClick: onConfirm, className: `rounded-lg px-4 py-2 text-sm font-medium text-white ${destructive
+                                        ? 'bg-red-600 hover:bg-red-700'
+                                        : 'bg-primary-600 hover:bg-primary-700'}`, children: confirmLabel })] })] }) })] }));
+}
