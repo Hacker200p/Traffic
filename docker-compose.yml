@@ -1,0 +1,163 @@
+version: '3.8'
+
+services:
+  # ---- PostgreSQL with PostGIS ----
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: traffic_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: traffic_control
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_secret_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./src/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./src/database/migrations/002_integration_updates.sql:/docker-entrypoint-initdb.d/02-integration.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d traffic_control"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - traffic_network
+
+  # ---- Redis ----
+  redis:
+    image: redis:7-alpine
+    container_name: traffic_redis
+    restart: unless-stopped
+    command: redis-server --requirepass redis_secret_password --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis_secret_password", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - traffic_network
+
+  # ---- Application ----
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: traffic_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: traffic_control
+      DB_USER: postgres
+      DB_PASSWORD: postgres_secret_password
+      DB_POOL_MIN: 2
+      DB_POOL_MAX: 20
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_secret_password
+      REDIS_DB: 0
+      JWT_ACCESS_SECRET: change-this-to-a-very-long-production-secret!
+      JWT_REFRESH_SECRET: change-this-to-another-long-production-secret!
+      JWT_ACCESS_EXPIRY: 15m
+      JWT_REFRESH_EXPIRY: 7d
+      CORS_ORIGINS: http://localhost:3000,http://localhost:5173
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX_REQUESTS: 100
+      LOG_LEVEL: info
+      LOG_DIR: logs
+      SERVICE_API_KEY: ${SERVICE_API_KEY:-change-this-to-a-production-service-key}
+      SERVICE_SYSTEM_USER_ID: "00000000-0000-0000-0000-000000000001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - app_logs:/app/logs
+    networks:
+      - traffic_network
+
+  # ---- AI Microservice (Python / FastAPI) ----
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: traffic_ai
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8001
+      BACKEND_API_URL: http://app:3000/api/v1
+      BACKEND_API_KEY: ${SERVICE_API_KEY:-change-this-to-a-production-service-key}
+      YOLO_VEHICLE_MODEL: yolov8n.pt
+      YOLO_HELMET_MODEL: yolov8n.pt
+      YOLO_PLATE_MODEL: yolov8n.pt
+      VEHICLE_CONFIDENCE_THRESHOLD: 0.45
+      HELMET_CONFIDENCE_THRESHOLD: 0.50
+      PLATE_CONFIDENCE_THRESHOLD: 0.40
+      RED_LIGHT_CONFIDENCE_THRESHOLD: 0.50
+      DENSITY_LOW_THRESHOLD: 5
+      DENSITY_MEDIUM_THRESHOLD: 15
+      DENSITY_HIGH_THRESHOLD: 30
+      OCR_LANGUAGES: en
+      MAX_IMAGE_SIZE: 4096
+      MAX_CONCURRENT_PROCESSING: 4
+      LOG_LEVEL: INFO
+    depends_on:
+      app:
+        condition: service_started
+    volumes:
+      - ai_models:/app/models
+      - ai_logs:/app/logs
+    networks:
+      - traffic_network
+    # Uncomment below for NVIDIA GPU support:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # ---- Frontend (React Dashboard) ----
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: traffic_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      app:
+        condition: service_started
+    networks:
+      - traffic_network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  app_logs:
+    driver: local
+  ai_models:
+    driver: local
+  ai_logs:
+    driver: local
+
+networks:
+  traffic_network:
+    driver: bridge

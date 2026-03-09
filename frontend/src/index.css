@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base resets ──────────────────────────────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* ── Mapbox overrides ─────────────────────────────────────────────────────── */
+.mapboxgl-popup-close-button {
+  color: #94a3b8;
+  font-size: 16px;
+  padding: 4px 8px;
+}
+
+.mapboxgl-popup-close-button:hover {
+  color: #f1f5f9;
+  background: transparent;
+}
+
+.mapboxgl-ctrl-group {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  border-radius: 8px !important;
+}
+
+.mapboxgl-ctrl-group button {
+  border-bottom: 1px solid #334155 !important;
+}
+
+.mapboxgl-ctrl-group button + button {
+  border-top: none !important;
+}
+
+.mapboxgl-ctrl-group button span {
+  filter: invert(1);
+}
