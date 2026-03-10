@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchLivePositions } from '@/store/slices/trackingSlice';
 import { fetchAlerts } from '@/store/slices/alertSlice';
@@ -11,7 +11,8 @@ import { REFRESH_INTERVAL_LIVE } from '@/utils/constants';
 export default function LiveMapPage() {
     const dispatch = useAppDispatch();
     const livePositions = useAppSelector((s) => s.tracking.livePositions);
-    const alerts = useAppSelector((s) => s.alerts.items.filter((a) => a.location));
+    const alertItems = useAppSelector((s) => s.alerts.items);
+    const alerts = useMemo(() => alertItems.filter((a) => a.location), [alertItems]);
     // Layers toggles
     const [showVehicles, setShowVehicles] = useState(true);
     const [showHeatmap, setShowHeatmap] = useState(true);

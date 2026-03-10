@@ -44,12 +44,12 @@ export default function LostVehiclePage() {
         {
             key: 'reportedAt',
             header: 'Reported',
-            render: (v) => v.lostReportedAt ? (_jsx("span", { title: formatDateTime(v.lostReportedAt), children: timeAgo(v.lostReportedAt) })) : ('—'),
+            render: (v) => v.updatedAt ? (_jsx("span", { title: formatDateTime(v.updatedAt), children: timeAgo(v.updatedAt) })) : ('—'),
         },
         {
             key: 'lastSeen',
             header: 'Last Spotted',
-            render: (v) => (v.lastSeenAt ? timeAgo(v.lastSeenAt) : 'Never'),
+            render: (v) => (v.updatedAt ? timeAgo(v.updatedAt) : 'Never'),
         },
         {
             key: 'status',

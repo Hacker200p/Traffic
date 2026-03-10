@@ -12,7 +12,8 @@ const initialState = {
 export const login = createAsyncThunk('auth/login', async (payload, { rejectWithValue }) => {
     try {
         const { data } = await authApi.login(payload);
-        return data.data; // { user, tokens }
+        const { user, accessToken, refreshToken } = data.data;
+        return { user, tokens: { accessToken, refreshToken } };
     }
     catch (err) {
         const msg = err.response?.data?.message ?? 'Login failed';

@@ -49,7 +49,7 @@ const vehicleSlice = createSlice({
                 state.items[idx] = action.payload;
             const lIdx = state.lostVehicles.findIndex((v) => v.id === action.payload.id);
             if (lIdx !== -1) {
-                if (action.payload.isLost) {
+                if (action.payload.isBlacklisted) {
                     state.lostVehicles[lIdx] = action.payload;
                 }
                 else {

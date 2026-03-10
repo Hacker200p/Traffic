@@ -1,0 +1,132 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.analyticsService = void 0;
+const connection_1 = require("../../database/connection");
+
+class AnalyticsService {
+    async getSummary() {
+        const [vehicles, violations, signals, tracking] = await Promise.all([
+            connection_1.db.query(`
+                SELECT
+                    COUNT(*) as total_vehicles,
+                    COUNT(*) FILTER (WHERE is_blacklisted = true) as blacklisted
+                FROM vehicles
+            `),
+            connection_1.db.query(`
+                SELECT
+                    COUNT(*) as total_violations,
+                    COUNT(*) FILTER (WHERE status = 'pending') as pending_violations,
+                    COUNT(*) FILTER (WHERE severity = 'critical') as critical_violations,
+                    COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '24 hours') as today_violations
+                FROM violations
+            `),
+            connection_1.db.query(`
+                SELECT
+                    COUNT(*) as total_signals,
+                    COUNT(*) FILTER (WHERE is_online = true) as online_signals
+                FROM traffic_signals
+            `),
+            connection_1.db.query(`
+                SELECT COUNT(DISTINCT vehicle_id) as active_vehicles
+                FROM tracking_points
+                WHERE recorded_at >= NOW() - INTERVAL '1 hour'
+            `),
+        ]);
+        return {
+            vehicles: vehicles.rows[0],
+            violations: violations.rows[0],
+            signals: signals.rows[0],
+            tracking: tracking.rows[0],
+        };
+    }
+
+    async getTrafficFlow(query) {
+        const interval = query.interval || 'hour';
+        const hours = parseInt(query.hours || '24', 10);
+        const safeInterval = ['minute', 'hour', 'day', 'week', 'month'].includes(interval)
+            ? interval
+            : 'hour';
+
+        const result = await connection_1.db.query(`
+            SELECT
+                date_trunc($1, recorded_at) as time_bucket,
+                COUNT(*) as point_count,
+                COUNT(DISTINCT vehicle_id) as vehicle_count,
+                ROUND(AVG(speed)::numeric, 2) as avg_speed
+            FROM tracking_points
+            WHERE recorded_at >= NOW() - make_interval(hours => $2)
+            GROUP BY time_bucket
+            ORDER BY time_bucket
+        `, [safeInterval, hours]);
+
+        return result.rows;
+    }
+
+    async getViolationAnalytics(query) {
+        const hours = parseInt(query.hours || '168', 10); // default 7 days
+        const result = await connection_1.db.query(`
+            SELECT
+                date_trunc('day', created_at) as date,
+                type,
+                severity,
+                COUNT(*) as count
+            FROM violations
+            WHERE created_at >= NOW() - make_interval(hours => $1)
+            GROUP BY date, type, severity
+            ORDER BY date
+        `, [hours]);
+
+        return result.rows;
+    }
+
+    async getDensityTimeline(query) {
+        const hours = parseInt(query.hours || '24', 10);
+        const result = await connection_1.db.query(`
+            SELECT
+                date_trunc('hour', recorded_at) as time_bucket,
+                COUNT(*) as tracking_points,
+                COUNT(DISTINCT vehicle_id) as unique_vehicles
+            FROM tracking_points
+            WHERE recorded_at >= NOW() - make_interval(hours => $1)
+            GROUP BY time_bucket
+            ORDER BY time_bucket
+        `, [hours]);
+
+        return result.rows;
+    }
+
+    async getVehicleCountTimeline(query) {
+        const hours = parseInt(query.hours || '24', 10);
+        const result = await connection_1.db.query(`
+            SELECT
+                date_trunc('hour', recorded_at) as time_bucket,
+                COUNT(DISTINCT vehicle_id) as vehicle_count
+            FROM tracking_points
+            WHERE recorded_at >= NOW() - make_interval(hours => $1)
+            GROUP BY time_bucket
+            ORDER BY time_bucket
+        `, [hours]);
+
+        return result.rows;
+    }
+
+    async getSpeedTimeline(query) {
+        const hours = parseInt(query.hours || '24', 10);
+        const result = await connection_1.db.query(`
+            SELECT
+                date_trunc('hour', recorded_at) as time_bucket,
+                ROUND(AVG(speed)::numeric, 2) as avg_speed,
+                ROUND(MAX(speed)::numeric, 2) as max_speed,
+                ROUND(MIN(speed)::numeric, 2) as min_speed
+            FROM tracking_points
+            WHERE recorded_at >= NOW() - make_interval(hours => $1)
+              AND speed IS NOT NULL AND speed > 0
+            GROUP BY time_bucket
+            ORDER BY time_bucket
+        `, [hours]);
+
+        return result.rows;
+    }
+}
+
+exports.analyticsService = new AnalyticsService();

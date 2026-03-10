@@ -17,8 +17,8 @@ export const fetchAlerts = createAsyncThunk('alerts/fetchAll', async (params, { 
 });
 export const fetchUnreadCount = createAsyncThunk('alerts/unread', async (_, { rejectWithValue }) => {
     try {
-        const { data } = await alertsApi.getUnreadCount();
-        return data.data.count;
+        const { data } = await alertsApi.getActiveCount();
+        return data.data.count ?? data.data.total ?? 0;
     }
     catch {
         return rejectWithValue(0);

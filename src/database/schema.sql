@@ -3,8 +3,8 @@
 -- Full Database Schema with PostGIS
 -- ============================================
 
--- Enable PostGIS extension
-CREATE EXTENSION IF NOT EXISTS postgis;
+-- Enable extensions (PostGIS disabled for dev without it)
+-- CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================
@@ -58,7 +58,8 @@ CREATE TABLE IF NOT EXISTS signal_groups (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name            VARCHAR(200) NOT NULL,
     intersection_name VARCHAR(300),
-    location        GEOGRAPHY(POINT, 4326),
+    latitude        DOUBLE PRECISION,
+    longitude       DOUBLE PRECISION,
     description     TEXT,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -71,7 +72,8 @@ CREATE TABLE IF NOT EXISTS traffic_signals (
     id                      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name                    VARCHAR(200) NOT NULL,
     intersection_name       VARCHAR(300),
-    location                GEOGRAPHY(POINT, 4326) NOT NULL,
+    latitude                DOUBLE PRECISION NOT NULL,
+    longitude               DOUBLE PRECISION NOT NULL,
     direction               VARCHAR(20) NOT NULL CHECK (direction IN ('north', 'south', 'east', 'west', 'north_east', 'north_west', 'south_east', 'south_west')),
     type                    VARCHAR(20) NOT NULL DEFAULT 'standard' CHECK (type IN ('standard', 'pedestrian', 'arrow', 'flashing', 'emergency')),
     default_green_duration  INTEGER NOT NULL DEFAULT 30,
@@ -88,7 +90,8 @@ CREATE TABLE IF NOT EXISTS traffic_signals (
     updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_signals_location ON traffic_signals USING GIST(location);
+CREATE INDEX idx_signals_latitude ON traffic_signals(latitude);
+CREATE INDEX idx_signals_longitude ON traffic_signals(longitude);
 CREATE INDEX idx_signals_group ON traffic_signals(group_id);
 CREATE INDEX idx_signals_state ON traffic_signals(current_state);
 CREATE INDEX idx_signals_type ON traffic_signals(type);
@@ -133,7 +136,8 @@ CREATE INDEX idx_schedules_signal ON signal_schedules(signal_id);
 CREATE TABLE IF NOT EXISTS tracking_points (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     vehicle_id      UUID NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
-    location        GEOGRAPHY(POINT, 4326) NOT NULL,
+    latitude        DOUBLE PRECISION NOT NULL,
+    longitude       DOUBLE PRECISION NOT NULL,
     speed           DECIMAL(6,2),
     heading         DECIMAL(5,2),
     accuracy        DECIMAL(8,2),
@@ -143,7 +147,8 @@ CREATE TABLE IF NOT EXISTS tracking_points (
 
 CREATE INDEX idx_tracking_vehicle ON tracking_points(vehicle_id);
 CREATE INDEX idx_tracking_time ON tracking_points(recorded_at);
-CREATE INDEX idx_tracking_location ON tracking_points USING GIST(location);
+CREATE INDEX idx_tracking_latitude ON tracking_points(latitude);
+CREATE INDEX idx_tracking_longitude ON tracking_points(longitude);
 -- Composite index for recent positions per vehicle
 CREATE INDEX idx_tracking_vehicle_time ON tracking_points(vehicle_id, recorded_at DESC);
 
@@ -155,7 +160,8 @@ CREATE TABLE IF NOT EXISTS violations (
     vehicle_id      UUID NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
     type            VARCHAR(30) NOT NULL CHECK (type IN ('red_light', 'speeding', 'wrong_way', 'illegal_parking', 'no_seatbelt', 'illegal_turn', 'other')),
     description     TEXT,
-    location        GEOGRAPHY(POINT, 4326) NOT NULL,
+    latitude        DOUBLE PRECISION NOT NULL,
+    longitude       DOUBLE PRECISION NOT NULL,
     speed           DECIMAL(6,2),
     speed_limit     DECIMAL(6,2),
     evidence_url    VARCHAR(500),
@@ -173,7 +179,8 @@ CREATE INDEX idx_violations_vehicle ON violations(vehicle_id);
 CREATE INDEX idx_violations_type ON violations(type);
 CREATE INDEX idx_violations_status ON violations(status);
 CREATE INDEX idx_violations_severity ON violations(severity);
-CREATE INDEX idx_violations_location ON violations USING GIST(location);
+CREATE INDEX idx_violations_latitude ON violations(latitude);
+CREATE INDEX idx_violations_longitude ON violations(longitude);
 CREATE INDEX idx_violations_time ON violations(created_at);
 CREATE INDEX idx_violations_signal ON violations(signal_id);
 
@@ -186,7 +193,8 @@ CREATE TABLE IF NOT EXISTS alerts (
     priority        VARCHAR(10) NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'critical')),
     title           VARCHAR(200) NOT NULL,
     description     TEXT,
-    location        GEOGRAPHY(POINT, 4326) NOT NULL,
+    latitude        DOUBLE PRECISION NOT NULL,
+    longitude       DOUBLE PRECISION NOT NULL,
     radius          DECIMAL(10,2),
     vehicle_id      UUID REFERENCES vehicles(id) ON DELETE SET NULL,
     signal_id       UUID REFERENCES traffic_signals(id) ON DELETE SET NULL,
@@ -202,7 +210,8 @@ CREATE TABLE IF NOT EXISTS alerts (
 CREATE INDEX idx_alerts_type ON alerts(type);
 CREATE INDEX idx_alerts_priority ON alerts(priority);
 CREATE INDEX idx_alerts_status ON alerts(status);
-CREATE INDEX idx_alerts_location ON alerts USING GIST(location);
+CREATE INDEX idx_alerts_latitude ON alerts(latitude);
+CREATE INDEX idx_alerts_longitude ON alerts(longitude);
 CREATE INDEX idx_alerts_active ON alerts(status, expires_at) WHERE status = 'active';
 
 -- ============================================

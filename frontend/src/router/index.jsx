@@ -27,7 +27,7 @@ const router = createBrowserRouter([
             { path: 'signals', element: _jsx(SignalsPage, {}) },
         ],
     },
-]);
+], { future: { v7_startTransition: true } });
 export default function AppRouter() {
     return _jsx(RouterProvider, { router: router });
 }

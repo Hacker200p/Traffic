@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.allRoles = exports.policeAndAdmin = exports.adminOnly = exports.authorize = void 0;
-const errors_1 = require("../../common/errors");
+const errors_1 = require("../common/errors");
 const authorize = (...allowedRoles) => {
     return (req, _res, next) => {
         if (!req.user) {

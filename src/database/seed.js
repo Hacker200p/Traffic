@@ -30,9 +30,9 @@ async function seed() {
        ON CONFLICT (email) DO NOTHING`, [analystId, 'analyst@trafficcontrol.gov', analystPassword, 'Jane', 'Analyst', 'analyst', 'Data Analytics']);
         // Create signal group (intersection)
         const groupId = (0, uuid_1.v4)();
-        await connection_1.db.query(`INSERT INTO signal_groups (id, name, intersection_name, location, description)
-       VALUES ($1, $2, $3, ST_SetSRID(ST_MakePoint(-73.9857, 40.7484), 4326), $4)
-       ON CONFLICT DO NOTHING`, [groupId, 'Main St & 5th Ave', 'Main Street / Fifth Avenue Intersection', 'Primary downtown intersection']);
+        await connection_1.db.query(`INSERT INTO signal_groups (id, name, intersection_name, latitude, longitude, description)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT DO NOTHING`, [groupId, 'Main St & 5th Ave', 'Main Street / Fifth Avenue Intersection', 40.7484, -73.9857, 'Primary downtown intersection']);
         // Create traffic signals for the intersection
         const directions = [
             { dir: 'north', state: 'green' },
@@ -41,8 +41,8 @@ async function seed() {
             { dir: 'west', state: 'red' },
         ];
         for (const { dir, state } of directions) {
-            await connection_1.db.query(`INSERT INTO traffic_signals (id, name, intersection_name, location, direction, type, default_green_duration, default_yellow_duration, default_red_duration, is_autonomous, group_id, current_state)
-         VALUES ($1, $2, $3, ST_SetSRID(ST_MakePoint(-73.9857, 40.7484), 4326), $4, 'standard', 30, 5, 30, TRUE, $5, $6)`, [(0, uuid_1.v4)(), `Main & 5th - ${dir.toUpperCase()}`, 'Main Street / Fifth Avenue', dir, groupId, state]);
+            await connection_1.db.query(`INSERT INTO traffic_signals (id, name, intersection_name, latitude, longitude, direction, type, default_green_duration, default_yellow_duration, default_red_duration, is_autonomous, group_id, current_state)
+         VALUES ($1, $2, $3, $4, $5, $6, 'standard', 30, 5, 30, TRUE, $7, $8)`, [(0, uuid_1.v4)(), `Main & 5th - ${dir.toUpperCase()}`, 'Main Street / Fifth Avenue', 40.7484, -73.9857, dir, groupId, state]);
         }
         // Create sample vehicles
         const vehicles = [

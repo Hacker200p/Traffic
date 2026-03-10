@@ -4,13 +4,13 @@ import { HomeIcon, MapIcon, TruckIcon, ShieldExclamationIcon, ChartBarIcon, Magn
 import { useAuth } from '@/hooks/useAuth';
 import clsx from 'clsx';
 const navItems = [
-    { to: '/', label: 'Dashboard', icon: HomeIcon, roles: ['admin', 'operator', 'viewer'] },
-    { to: '/map', label: 'Live Map', icon: MapIcon, roles: ['admin', 'operator', 'viewer'] },
-    { to: '/vehicles', label: 'Vehicle Tracking', icon: TruckIcon, roles: ['admin', 'operator'] },
-    { to: '/lost-vehicles', label: 'Lost Vehicles', icon: MagnifyingGlassIcon, roles: ['admin', 'operator'] },
-    { to: '/violations', label: 'Violations', icon: ShieldExclamationIcon, roles: ['admin', 'operator'] },
-    { to: '/analytics', label: 'Analytics', icon: ChartBarIcon, roles: ['admin'] },
-    { to: '/signals', label: 'Signals', icon: SignalIcon, roles: ['admin'] },
+    { to: '/', label: 'Dashboard', icon: HomeIcon, roles: ['admin', 'police', 'analyst'] },
+    { to: '/map', label: 'Live Map', icon: MapIcon, roles: ['admin', 'police', 'analyst'] },
+    { to: '/vehicles', label: 'Vehicle Tracking', icon: TruckIcon, roles: ['admin', 'police'] },
+    { to: '/lost-vehicles', label: 'Lost Vehicles', icon: MagnifyingGlassIcon, roles: ['admin', 'police'] },
+    { to: '/violations', label: 'Violations', icon: ShieldExclamationIcon, roles: ['admin', 'police'] },
+    { to: '/analytics', label: 'Analytics', icon: ChartBarIcon, roles: ['admin', 'analyst'] },
+    { to: '/signals', label: 'Signals', icon: SignalIcon, roles: ['admin', 'police', 'analyst'] },
 ];
 export default function Sidebar() {
     const { hasRole } = useAuth();

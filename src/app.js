@@ -34,7 +34,8 @@ app.use((0, compression_1.default)());
 // ---- Body parsers ----
 app.use(express_1.default.json({ limit: '10mb' }));
 app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
-// ---- Rate limiting ----
+// ---- Rate limiting (production only) ----
+if (process.env.NODE_ENV === 'production') {
 const limiter = (0, express_rate_limit_1.default)({
     windowMs: config_1.config.rateLimit.windowMs,
     max: config_1.config.rateLimit.maxRequests,
@@ -52,7 +53,7 @@ app.use('/api/', limiter);
 // Stricter rate limit for auth endpoints
 const authLimiter = (0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20,
+    max: 100,
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -65,6 +66,7 @@ const authLimiter = (0, express_rate_limit_1.default)({
 });
 app.use('/api/v1/auth/login', authLimiter);
 app.use('/api/v1/auth/register', authLimiter);
+}
 // ---- Request logging ----
 app.use((req, _res, next) => {
     logger_1.logger.debug(`${req.method} ${req.path}`, {

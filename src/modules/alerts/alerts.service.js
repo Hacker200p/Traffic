@@ -9,11 +9,11 @@ const redis_1 = require("../../config/redis");
 class AlertsService {
     async create(input, createdBy) {
         const id = (0, uuid_1.v4)();
-        const result = await connection_1.db.query(`INSERT INTO alerts (id, type, priority, title, description, location, radius, vehicle_id, signal_id, status, created_by, expires_at, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326), $8, $9, $10, 'active', $11, $12::timestamptz, NOW(), NOW())
+        const result = await connection_1.db.query(`INSERT INTO alerts (id, type, priority, title, description, latitude, longitude, radius, vehicle_id, signal_id, status, created_by, expires_at, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'active', $11, $12::timestamptz, NOW(), NOW())
        RETURNING id, type, priority, title, description,
-                 ST_X(location::geometry) as longitude, ST_Y(location::geometry) as latitude,
-                 radius, vehicle_id, signal_id, status, created_by, expires_at, created_at`, [id, input.type, input.priority, input.title, input.description, input.longitude, input.latitude, input.radius, input.vehicleId, input.signalId, createdBy, input.expiresAt]);
+                 longitude, latitude,
+                 radius, vehicle_id, signal_id, status, created_by, expires_at, created_at`, [id, input.type, input.priority, input.title, input.description, input.latitude, input.longitude, input.radius, input.vehicleId, input.signalId, createdBy, input.expiresAt]);
         const alert = result.rows[0];
         // Publish real-time alert
         await redis_1.redis.publish('alerts:new', JSON.stringify(alert));
@@ -50,7 +50,7 @@ class AlertsService {
         const countResult = await connection_1.db.query(`SELECT COUNT(*) FROM alerts a ${where}`, params);
         const total = parseInt(countResult.rows[0].count, 10);
         const dataResult = await connection_1.db.query(`SELECT a.id, a.type, a.priority, a.title, a.description,
-              ST_X(a.location::geometry) as longitude, ST_Y(a.location::geometry) as latitude,
+              a.longitude, a.latitude,
               a.radius, a.vehicle_id, a.signal_id, a.status, a.created_by,
               a.resolved_by, a.resolved_notes, a.expires_at, a.created_at, a.updated_at,
               u.first_name || ' ' || u.last_name as creator_name
@@ -64,7 +64,7 @@ class AlertsService {
         return { data: dataResult.rows, total, page, limit };
     }
     async findById(id) {
-        const result = await connection_1.db.query(`SELECT a.*, ST_X(a.location::geometry) as longitude, ST_Y(a.location::geometry) as latitude,
+        const result = await connection_1.db.query(`SELECT a.*, a.longitude, a.latitude,
               u.first_name || ' ' || u.last_name as creator_name
        FROM alerts a
        LEFT JOIN users u ON a.created_by = u.id

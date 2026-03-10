@@ -12,7 +12,17 @@ const initialState = {
 export const fetchAnalyticsSummary = createAsyncThunk('analytics/summary', async (_, { rejectWithValue }) => {
     try {
         const { data } = await analyticsApi.getSummary();
-        return data.data;
+        const raw = data.data;
+        // Flatten nested backend structure into flat object expected by pages
+        return {
+            totalVehiclesToday: raw.tracking?.activeVehicles ?? raw.vehicles?.totalVehicles ?? 0,
+            totalViolationsToday: raw.violations?.todayViolations ?? raw.violations?.totalViolations ?? 0,
+            activeCameras: 0,
+            onlineSignals: raw.signals?.onlineSignals ?? 0,
+            avgSpeedKmh: 0,
+            lostVehiclesCount: raw.vehicles?.blacklisted ?? 0,
+            densityLevel: 'low',
+        };
     }
     catch {
         return rejectWithValue('Failed to load summary');

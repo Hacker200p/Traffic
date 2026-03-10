@@ -12,6 +12,6 @@ exports.violationsRouter = router;
 router.use(auth_middleware_1.authenticate);
 router.post('/', (0, rbac_middleware_1.authorize)('admin', 'police'), (0, validate_middleware_1.validate)(violations_validation_1.createViolationSchema), violations_controller_1.violationsController.create);
 router.get('/', (0, rbac_middleware_1.authorize)('admin', 'police', 'analyst'), (0, validate_middleware_1.validate)(violations_validation_1.violationQuerySchema, 'query'), violations_controller_1.violationsController.findAll);
-router.get('/stats', (0, rbac_middleware_1.authorize)('admin', 'analyst'), violations_controller_1.violationsController.getStats);
+router.get('/stats', (0, rbac_middleware_1.authorize)('admin', 'police', 'analyst'), violations_controller_1.violationsController.getStats);
 router.get('/:id', (0, rbac_middleware_1.authorize)('admin', 'police', 'analyst'), violations_controller_1.violationsController.findById);
 router.patch('/:id', (0, rbac_middleware_1.authorize)('admin', 'police'), (0, validate_middleware_1.validate)(violations_validation_1.updateViolationSchema), violations_controller_1.violationsController.update);

@@ -5,7 +5,8 @@ export const vehiclesApi = {
     create: (body) => api.post('/vehicles', body),
     update: (id, body) => api.patch(`/vehicles/${id}`, body),
     delete: (id) => api.delete(`/vehicles/${id}`),
-    reportLost: (id, body) => api.post(`/vehicles/${id}/report-lost`, body),
-    markFound: (id) => api.post(`/vehicles/${id}/mark-found`),
-    getLostVehicles: (params) => api.get('/vehicles/lost', { params }),
+    findByPlate: (plateNumber) => api.get(`/vehicles/plate/${plateNumber}`),
+    reportLost: (id, body) => api.patch(`/vehicles/${id}`, { isBlacklisted: true, ...body }),
+    markFound: (id) => api.patch(`/vehicles/${id}`, { isBlacklisted: false }),
+    getLostVehicles: (params) => api.get('/vehicles', { params: { isBlacklisted: true, ...params } }),
 };

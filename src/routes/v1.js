@@ -9,6 +9,7 @@ const tracking_routes_1 = require("../modules/tracking/tracking.routes");
 const alerts_routes_1 = require("../modules/alerts/alerts.routes");
 const signals_routes_1 = require("../modules/traffic-signals/signals.routes");
 const integration_routes_1 = require("../modules/integration/integration.routes");
+const analytics_routes_1 = require("../modules/analytics/analytics.routes");
 const router = (0, express_1.Router)();
 exports.apiV1Router = router;
 router.use('/auth', auth_routes_1.authRouter);
@@ -17,5 +18,6 @@ router.use('/violations', violations_routes_1.violationsRouter);
 router.use('/tracking', tracking_routes_1.trackingRouter);
 router.use('/alerts', alerts_routes_1.alertsRouter);
 router.use('/signals', signals_routes_1.signalsRouter);
+router.use('/analytics', analytics_routes_1.analyticsRouter);
 // AI microservice integration (service-to-service, API-key auth)
 router.use('/integration', integration_routes_1.integrationRouter);

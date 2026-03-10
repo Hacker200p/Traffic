@@ -9,9 +9,9 @@ const redis_1 = require("../../config/redis");
 class ViolationsService {
     async create(input) {
         const id = (0, uuid_1.v4)();
-        const result = await connection_1.db.query(`INSERT INTO violations (id, vehicle_id, type, description, location, speed, speed_limit, evidence_url, signal_id, severity, fine_amount, status, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326), $7, $8, $9, $10, $11, $12, 'pending', NOW(), NOW())
-       RETURNING id, vehicle_id, type, description, ST_X(location::geometry) as longitude, ST_Y(location::geometry) as latitude, speed, speed_limit, evidence_url, signal_id, severity, fine_amount, status, created_at`, [id, input.vehicleId, input.type, input.description, input.longitude, input.latitude, input.speed, input.speedLimit, input.evidenceUrl, input.signalId, input.severity, input.fineAmount]);
+        const result = await connection_1.db.query(`INSERT INTO violations (id, vehicle_id, type, description, latitude, longitude, speed, speed_limit, evidence_url, signal_id, severity, fine_amount, status, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending', NOW(), NOW())
+       RETURNING id, vehicle_id, type, description, longitude, latitude, speed, speed_limit, evidence_url, signal_id, severity, fine_amount, status, created_at`, [id, input.vehicleId, input.type, input.description, input.latitude, input.longitude, input.speed, input.speedLimit, input.evidenceUrl, input.signalId, input.severity, input.fineAmount]);
         // Publish violation event for real-time alerts
         await redis_1.redis.publish('violations:new', JSON.stringify(result.rows[0]));
         logger_1.logger.info('Violation created', { violationId: id, type: input.type, vehicleId: input.vehicleId });
@@ -51,7 +51,7 @@ class ViolationsService {
         const countResult = await connection_1.db.query(`SELECT COUNT(*) FROM violations v ${whereClause}`, params);
         const total = parseInt(countResult.rows[0].count, 10);
         const dataResult = await connection_1.db.query(`SELECT v.id, v.vehicle_id, veh.plate_number, v.type, v.description,
-              ST_X(v.location::geometry) as longitude, ST_Y(v.location::geometry) as latitude,
+              v.longitude, v.latitude,
               v.speed, v.speed_limit, v.evidence_url, v.signal_id, v.severity, v.fine_amount,
               v.status, v.reviewed_by, v.review_notes, v.created_at, v.updated_at
        FROM violations v
@@ -62,7 +62,7 @@ class ViolationsService {
         return { data: dataResult.rows, total, page, limit };
     }
     async findById(id) {
-        const result = await connection_1.db.query(`SELECT v.*, ST_X(v.location::geometry) as longitude, ST_Y(v.location::geometry) as latitude,
+        const result = await connection_1.db.query(`SELECT v.*, v.longitude, v.latitude,
               veh.plate_number, veh.type as vehicle_type, veh.make, veh.model, veh.color
        FROM violations v
        LEFT JOIN vehicles veh ON v.vehicle_id = veh.id
@@ -113,16 +113,6 @@ class ViolationsService {
             params.push(endDate);
         }
         const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-        const result = await connection_1.db.query(`SELECT
-         COUNT(*) as total,
-         COUNT(*) FILTER (WHERE status = 'pending') as pending,
-         COUNT(*) FILTER (WHERE status = 'confirmed') as confirmed,
-         COUNT(*) FILTER (WHERE severity = 'critical') as critical,
-         SUM(COALESCE(fine_amount, 0)) FILTER (WHERE status = 'confirmed') as total_fines,
-         json_agg(json_build_object('type', type, 'count', cnt)) as by_type
-       FROM violations ${whereClause},
-       LATERAL (SELECT type, COUNT(*) as cnt FROM violations ${whereClause} GROUP BY type) sub`, params);
-        // Simpler stats query
         const byType = await connection_1.db.query(`SELECT type, COUNT(*) as count FROM violations ${whereClause} GROUP BY type ORDER BY count DESC`, params);
         const bySeverity = await connection_1.db.query(`SELECT severity, COUNT(*) as count FROM violations ${whereClause} GROUP BY severity`, params);
         const totals = await connection_1.db.query(`SELECT COUNT(*) as total,

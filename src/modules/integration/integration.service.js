@@ -24,22 +24,21 @@ class IntegrationService {
         // Insert violation directly (supports nullable vehicle_id after migration)
         const id = (0, uuid_1.v4)();
         const result = await connection_1.db.query(`INSERT INTO violations
-        (id, vehicle_id, type, description, location, speed, speed_limit,
+        (id, vehicle_id, type, description, latitude, longitude, speed, speed_limit,
          evidence_url, signal_id, severity, fine_amount, status, created_at, updated_at)
        VALUES
-        ($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326), $7, $8,
+        ($1, $2, $3, $4, $5, $6, $7, $8,
          $9, $10, $11, $12, 'pending', NOW(), NOW())
        RETURNING id, vehicle_id, type, description,
-                 ST_X(location::geometry) as longitude,
-                 ST_Y(location::geometry) as latitude,
+                 longitude, latitude,
                  speed, speed_limit, evidence_url, signal_id,
                  severity, fine_amount, status, created_at`, [
             id,
             vehicleId,
             input.type,
             input.description || '',
-            input.longitude,
             input.latitude,
+            input.longitude,
             input.speed ?? null,
             input.speed_limit ?? null,
             input.evidence_url ?? null,

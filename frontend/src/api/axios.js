@@ -6,6 +6,17 @@ const api = axios.create({
     timeout: 15000,
     headers: { 'Content-Type': 'application/json' },
 });
+/* ── snake_case → camelCase key transformer ────────────────────────────── */
+const toCamel = (s) => s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+const transformKeys = (obj) => {
+    if (Array.isArray(obj)) return obj.map(transformKeys);
+    if (obj && typeof obj === 'object' && !(obj instanceof Date)) {
+        return Object.fromEntries(
+            Object.entries(obj).map(([k, v]) => [toCamel(k), transformKeys(v)])
+        );
+    }
+    return obj;
+};
 /* ── Request interceptor – attach access token ────────────────────────────── */
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem(LS_ACCESS_TOKEN);
@@ -14,14 +25,19 @@ api.interceptors.request.use((config) => {
     }
     return config;
 });
-/* ── Response interceptor – refresh on 401 ────────────────────────────────── */
+/* ── Response interceptor – transform keys + refresh on 401 ────────────────── */
 let isRefreshing = false;
 let failedQueue = [];
 const processQueue = (error, token) => {
     failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve(token)));
     failedQueue = [];
 };
-api.interceptors.response.use((res) => res, async (error) => {
+api.interceptors.response.use((res) => {
+    if (res.data && typeof res.data === 'object') {
+        res.data = transformKeys(res.data);
+    }
+    return res;
+}, async (error) => {
     const original = error.config;
     if (error.response?.status !== 401 || original._retry) {
         return Promise.reject(error);
