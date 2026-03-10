@@ -6,4 +6,5 @@ export const analyticsApi = {
     getDensityTimeline: (params) => api.get('/analytics/density', { params }),
     getVehicleCountTimeline: (params) => api.get('/analytics/vehicle-count', { params }),
     getSpeedTimeline: (params) => api.get('/analytics/speed', { params }),
+    getDensityZones: (params) => api.get('/analytics/density-zones', { params }),
 };

@@ -6,6 +6,7 @@ const initialState = {
     violationStats: [],
     densityTimeline: [],
     vehicleCountTimeline: [],
+    densityZones: [],
     loading: false,
     error: null,
 };
@@ -17,7 +18,7 @@ export const fetchAnalyticsSummary = createAsyncThunk('analytics/summary', async
         return {
             totalVehiclesToday: raw.tracking?.activeVehicles ?? raw.vehicles?.totalVehicles ?? 0,
             totalViolationsToday: raw.violations?.todayViolations ?? raw.violations?.totalViolations ?? 0,
-            activeCameras: 0,
+            activeCameras: Number(raw.cameras?.totalCameras ?? 0),
             onlineSignals: raw.signals?.onlineSignals ?? 0,
             avgSpeedKmh: 0,
             lostVehiclesCount: raw.vehicles?.blacklisted ?? 0,
@@ -64,6 +65,15 @@ export const fetchVehicleCountTimeline = createAsyncThunk('analytics/vehicleCoun
         return rejectWithValue('Failed to load vehicle count');
     }
 });
+export const fetchDensityZones = createAsyncThunk('analytics/densityZones', async (params, { rejectWithValue }) => {
+    try {
+        const { data } = await analyticsApi.getDensityZones(params);
+        return data.data;
+    }
+    catch {
+        return rejectWithValue('Failed to load density zones');
+    }
+});
 const analyticsSlice = createSlice({
     name: 'analytics',
     initialState,
@@ -82,7 +92,8 @@ const analyticsSlice = createSlice({
             .addCase(fetchTrafficFlow.fulfilled, (state, { payload }) => { state.trafficFlow = payload; })
             .addCase(fetchViolationAnalytics.fulfilled, (state, { payload }) => { state.violationStats = payload; })
             .addCase(fetchDensityTimeline.fulfilled, (state, { payload }) => { state.densityTimeline = payload; })
-            .addCase(fetchVehicleCountTimeline.fulfilled, (state, { payload }) => { state.vehicleCountTimeline = payload; });
+            .addCase(fetchVehicleCountTimeline.fulfilled, (state, { payload }) => { state.vehicleCountTimeline = payload; })
+            .addCase(fetchDensityZones.fulfilled, (state, { payload }) => { state.densityZones = payload; });
     },
 });
 export default analyticsSlice.reducer;

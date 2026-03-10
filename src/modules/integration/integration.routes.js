@@ -22,3 +22,9 @@ router.post('/tracking/batch', (0, validate_middleware_1.validate)(integration_v
 router.post('/alerts', (0, validate_middleware_1.validate)(integration_validation_1.aiAlertSchema), integration_controller_1.integrationController.createAlert);
 // Signal state update (from AI density analysis)
 router.post('/signals/:id/state', (0, validate_middleware_1.validate)(integration_validation_1.aiSignalStateSchema), integration_controller_1.integrationController.changeSignalState);
+// Emergency vehicle priority (from AI plate recognition)
+router.post('/emergency-priority', (0, validate_middleware_1.validate)(integration_validation_1.aiEmergencyPrioritySchema), integration_controller_1.integrationController.emergencyPriority);
+// Vehicle lookup by plate (for AI service to check vehicle type)
+router.get('/vehicles/plate/:plate', integration_controller_1.integrationController.lookupVehicle);
+// Vehicle sighting (plate detected at camera — for movement tracking)
+router.post('/sightings', (0, validate_middleware_1.validate)(integration_validation_1.aiSightingSchema), integration_controller_1.integrationController.recordSighting);

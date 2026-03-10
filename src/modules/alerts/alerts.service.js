@@ -6,6 +6,7 @@ const connection_1 = require("../../database/connection");
 const errors_1 = require("../../common/errors");
 const logger_1 = require("../../common/logger");
 const redis_1 = require("../../config/redis");
+const notification_service_1 = require("../notifications/notification.service");
 class AlertsService {
     async create(input, createdBy) {
         const id = (0, uuid_1.v4)();
@@ -22,6 +23,10 @@ class AlertsService {
             await redis_1.redis.setJSON(`alert:critical:${id}`, alert, 3600);
         }
         logger_1.logger.info('Alert created', { alertId: id, type: input.type, priority: input.priority });
+        // Dispatch SMS / push / email notifications (fire-and-forget)
+        notification_service_1.notificationService.sendAlertNotification(alert).catch(err => {
+            logger_1.logger.error('Alert notification dispatch failed', { alertId: id, err: err.message });
+        });
         return alert;
     }
     async findAll(query) {

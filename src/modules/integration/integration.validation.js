@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.aiSignalStateSchema = exports.aiAlertSchema = exports.aiTrackingBatchSchema = exports.aiTrackingSchema = exports.aiViolationSchema = void 0;
+exports.aiSignalStateSchema = exports.aiAlertSchema = exports.aiTrackingBatchSchema = exports.aiTrackingSchema = exports.aiViolationSchema = exports.aiSightingSchema = void 0;
 const zod_1 = require("zod");
 // ── Violation from AI (relaxed: no vehicleId required, accepts snake_case) ──
 exports.aiViolationSchema = zod_1.z.object({
@@ -54,4 +54,23 @@ exports.aiSignalStateSchema = zod_1.z.object({
     state: zod_1.z.enum(['red', 'yellow', 'green', 'flashing', 'off']),
     duration: zod_1.z.number().int().positive().optional(),
     reason: zod_1.z.string().max(500).optional(),
+});
+// ── Emergency priority check from AI ────────────────────────────────────────
+exports.aiEmergencyPrioritySchema = zod_1.z.object({
+    plate_text: zod_1.z.string().min(1).max(20),
+    signal_id: zod_1.z.string().optional(),
+    camera_id: zod_1.z.string().optional(),
+    latitude: zod_1.z.number().min(-90).max(90).optional(),
+    longitude: zod_1.z.number().min(-180).max(180).optional(),
+});
+// ── Vehicle sighting from AI (plate detection at camera) ────────────────────
+exports.aiSightingSchema = zod_1.z.object({
+    plate_text: zod_1.z.string().min(1).max(20),
+    camera_id: zod_1.z.string().optional(),
+    confidence: zod_1.z.number().min(0).max(1).optional(),
+    latitude: zod_1.z.number().min(-90).max(90),
+    longitude: zod_1.z.number().min(-180).max(180),
+    speed: zod_1.z.number().min(0).optional(),
+    heading: zod_1.z.number().min(0).max(360).optional(),
+    detected_at: zod_1.z.string().datetime().optional(),
 });

@@ -5,7 +5,7 @@ const connection_1 = require("../../database/connection");
 
 class AnalyticsService {
     async getSummary() {
-        const [vehicles, violations, signals, tracking] = await Promise.all([
+        const [vehicles, violations, signals, tracking, cameras] = await Promise.all([
             connection_1.db.query(`
                 SELECT
                     COUNT(*) as total_vehicles,
@@ -31,12 +31,17 @@ class AnalyticsService {
                 FROM tracking_points
                 WHERE recorded_at >= NOW() - INTERVAL '1 hour'
             `),
+            connection_1.db.query(`
+                SELECT COUNT(*) as total_cameras
+                FROM cameras
+            `).catch(() => ({ rows: [{ total_cameras: 0 }] })),
         ]);
         return {
             vehicles: vehicles.rows[0],
             violations: violations.rows[0],
             signals: signals.rows[0],
             tracking: tracking.rows[0],
+            cameras: cameras.rows[0],
         };
     }
 
@@ -126,6 +131,52 @@ class AnalyticsService {
         `, [hours]);
 
         return result.rows;
+    }
+
+    /**
+     * Returns spatial density zones by bucketing recent tracking points
+     * into grid cells.  Each zone has a bounding box, vehicle count,
+     * average speed, and a density level (low / medium / high / critical).
+     */
+    async getDensityZones(query) {
+        const minutes = parseInt(query.minutes || '30', 10);
+        // Grid size in degrees (~0.005 ≈ 500m at equator)
+        const gridSize = parseFloat(query.gridSize || '0.005');
+
+        const result = await connection_1.db.query(`
+            SELECT
+                FLOOR(latitude  / $2) * $2   AS lat_cell,
+                FLOOR(longitude / $2) * $2   AS lng_cell,
+                COUNT(*)                     AS point_count,
+                COUNT(DISTINCT vehicle_id)   AS vehicle_count,
+                ROUND(AVG(speed)::numeric,2) AS avg_speed
+            FROM tracking_points
+            WHERE recorded_at >= NOW() - make_interval(mins => $1)
+              AND latitude IS NOT NULL AND longitude IS NOT NULL
+            GROUP BY lat_cell, lng_cell
+            ORDER BY vehicle_count DESC
+            LIMIT 500
+        `, [minutes, gridSize]);
+
+        return result.rows.map(r => {
+            const vc = parseInt(r.vehicle_count, 10);
+            let level = 'low';
+            if (vc >= 20) level = 'critical';
+            else if (vc >= 10) level = 'high';
+            else if (vc >= 4) level = 'medium';
+            const lat = parseFloat(r.lat_cell);
+            const lng = parseFloat(r.lng_cell);
+            return {
+                vehicleCount: vc,
+                avgSpeed: parseFloat(r.avg_speed) || 0,
+                level,
+                occupancyRatio: Math.min(1, vc / 25),
+                bounds: [
+                    { latitude: lat, longitude: lng },
+                    { latitude: lat + gridSize, longitude: lng + gridSize },
+                ],
+            };
+        });
     }
 }
 

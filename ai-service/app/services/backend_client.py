@@ -66,6 +66,22 @@ class BackendClient:
     async def post_signal_state(self, signal_id: str, payload: dict[str, Any]) -> dict:
         return await self._post(f"/integration/signals/{signal_id}/state", payload)
 
+    async def post_emergency_priority(self, payload: dict[str, Any]) -> dict:
+        """Check if a plate belongs to an emergency vehicle and trigger signal override."""
+        return await self._post("/integration/emergency-priority", payload)
+
+    async def post_sighting(self, payload: dict[str, Any]) -> dict:
+        """Record a vehicle sighting (plate detection at camera) for movement tracking."""
+        return await self._post("/integration/sightings", payload)
+
+    async def lookup_vehicle_by_plate(self, plate_text: str) -> dict | None:
+        """Look up vehicle info by plate number. Returns None if not found."""
+        try:
+            result = await self._get(f"/integration/vehicles/plate/{plate_text}")
+            return result.get("data")
+        except BackendAPIError:
+            return None
+
     async def get_signal(self, signal_id: str) -> dict:
         return await self._get(f"/signals/{signal_id}")
 

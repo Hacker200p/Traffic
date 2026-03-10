@@ -1,9 +1,13 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { trackingApi } from '@/api/tracking.api';
+import { analyticsApi } from '@/api/analytics.api';
 const initialState = {
     livePositions: [],
     vehicleRoute: [],
+    movement: null,
+    cameras: [],
     loading: false,
+    movementLoading: false,
     error: null,
 };
 export const fetchLivePositions = createAsyncThunk('tracking/live', async (_, { rejectWithValue }) => {
@@ -24,6 +28,24 @@ export const fetchVehicleRoute = createAsyncThunk('tracking/route', async ({ veh
         return rejectWithValue('Failed to fetch vehicle route');
     }
 });
+export const fetchVehicleMovement = createAsyncThunk('tracking/movement', async ({ plateNumber, startDate, endDate }, { rejectWithValue }) => {
+    try {
+        const { data } = await trackingApi.getMovement(plateNumber, { startDate, endDate });
+        return data.data;
+    }
+    catch {
+        return rejectWithValue('Failed to fetch vehicle movement');
+    }
+});
+export const fetchCameras = createAsyncThunk('tracking/cameras', async (_, { rejectWithValue }) => {
+    try {
+        const { data } = await trackingApi.getCameras();
+        return data.data;
+    }
+    catch {
+        return rejectWithValue('Failed to fetch cameras');
+    }
+});
 const trackingSlice = createSlice({
     name: 'tracking',
     initialState,
@@ -39,6 +61,7 @@ const trackingSlice = createSlice({
         },
         clearRoute(state) {
             state.vehicleRoute = [];
+            state.movement = null;
         },
     },
     extraReducers: (builder) => {
@@ -54,6 +77,21 @@ const trackingSlice = createSlice({
         })
             .addCase(fetchVehicleRoute.fulfilled, (state, { payload }) => {
             state.vehicleRoute = payload;
+        })
+            .addCase(fetchVehicleMovement.pending, (state) => {
+            state.movementLoading = true;
+            state.error = null;
+        })
+            .addCase(fetchVehicleMovement.fulfilled, (state, { payload }) => {
+            state.movementLoading = false;
+            state.movement = payload;
+        })
+            .addCase(fetchVehicleMovement.rejected, (state, { payload }) => {
+            state.movementLoading = false;
+            state.error = payload;
+        })
+            .addCase(fetchCameras.fulfilled, (state, { payload }) => {
+            state.cameras = payload;
         });
     },
 });

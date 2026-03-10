@@ -6,6 +6,7 @@ const connection_1 = require("../../database/connection");
 const errors_1 = require("../../common/errors");
 const logger_1 = require("../../common/logger");
 const redis_1 = require("../../config/redis");
+const challan_service_1 = require("../challans/challan.service");
 class ViolationsService {
     async create(input) {
         const id = (0, uuid_1.v4)();
@@ -98,6 +99,12 @@ class ViolationsService {
         values.push(id);
         await connection_1.db.query(`UPDATE violations SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`, values);
         logger_1.logger.info('Violation updated', { violationId: id, status: input.status });
+        // Auto-generate e-challan when violation is confirmed
+        if (input.status === 'confirmed') {
+            challan_service_1.challanService.generateForViolation(id, input.fineAmount).catch(err => {
+                logger_1.logger.error('Auto-challan generation failed', { violationId: id, error: err.message });
+            });
+        }
         return this.findById(id);
     }
     async getStats(startDate, endDate) {

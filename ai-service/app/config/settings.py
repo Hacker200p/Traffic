@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     helmet_confidence: float = Field(default=0.50, ge=0.0, le=1.0)
     plate_confidence: float = Field(default=0.40, ge=0.0, le=1.0)
     red_light_confidence: float = Field(default=0.50, ge=0.0, le=1.0)
+    seatbelt_confidence: float = Field(default=0.45, ge=0.0, le=1.0)
+
+    # ── Additional YOLO Models ──────────────────────────────
+    yolo_seatbelt_model: str = "models/yolov8n.pt"
 
     # ── Traffic Density ─────────────────────────────────────
     density_low_threshold: int = 5

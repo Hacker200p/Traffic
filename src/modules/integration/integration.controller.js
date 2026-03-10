@@ -33,6 +33,19 @@ class IntegrationController {
         const signal = await integration_service_1.integrationService.ingestSignalState(req.params.id, req.body, req.user.userId);
         (0, common_1.sendSuccess)(res, signal);
     });
+    /** POST /integration/emergency-priority — Check plate and trigger emergency override */
+    emergencyPriority = (0, common_1.asyncHandler)(async (req, res) => {
+        const result = await integration_service_1.integrationService.handleEmergencyPriority(req.body, req.user.userId);
+        (0, common_1.sendSuccess)(res, result);
+    });
+    /** GET /integration/vehicles/plate/:plate — Lookup vehicle by plate number */
+    lookupVehicle = (0, common_1.asyncHandler)(async (req, res) => {
+        const vehicle = await integration_service_1.integrationService.lookupVehicleByPlate(req.params.plate);
+        if (!vehicle) {
+            return (0, common_1.sendSuccess)(res, null);
+        }
+        (0, common_1.sendSuccess)(res, vehicle);
+    });
     /** GET /integration/health — Simple health check for the AI service to ping */
     health = (0, common_1.asyncHandler)(async (_req, res) => {
         (0, common_1.sendSuccess)(res, {
@@ -40,6 +53,11 @@ class IntegrationController {
             service: 'integration-gateway',
             timestamp: new Date().toISOString(),
         });
+    });
+    /** POST /integration/sightings — Record a vehicle sighting (plate at camera) */
+    recordSighting = (0, common_1.asyncHandler)(async (req, res) => {
+        const sighting = await integration_service_1.integrationService.ingestSighting(req.body);
+        (0, common_1.sendCreated)(res, sighting);
     });
 }
 exports.IntegrationController = IntegrationController;

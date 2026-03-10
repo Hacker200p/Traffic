@@ -4,6 +4,7 @@ const initialState = {
     items: [],
     selected: null,
     lostVehicles: [],
+    stolenSightings: [],
     loading: false,
     error: null,
     total: 0,
@@ -57,6 +58,11 @@ const vehicleSlice = createSlice({
                 }
             }
         },
+        addStolenSighting(state, action) {
+            state.stolenSightings.unshift(action.payload);
+            // Keep only last 50 sightings in memory
+            if (state.stolenSightings.length > 50) state.stolenSightings.pop();
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -79,5 +85,5 @@ const vehicleSlice = createSlice({
         });
     },
 });
-export const { clearSelected, updateVehicleInList } = vehicleSlice.actions;
+export const { clearSelected, updateVehicleInList, addStolenSighting } = vehicleSlice.actions;
 export default vehicleSlice.reducer;

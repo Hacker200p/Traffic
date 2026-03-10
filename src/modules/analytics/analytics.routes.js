@@ -17,3 +17,4 @@ router.get('/violations', (0, rbac_middleware_1.authorize)('admin', 'police', 'a
 router.get('/density', (0, rbac_middleware_1.authorize)('admin', 'police', 'analyst'), analytics_controller_1.analyticsController.getDensityTimeline);
 router.get('/vehicle-count', (0, rbac_middleware_1.authorize)('admin', 'police', 'analyst'), analytics_controller_1.analyticsController.getVehicleCountTimeline);
 router.get('/speed', (0, rbac_middleware_1.authorize)('admin', 'police', 'analyst'), analytics_controller_1.analyticsController.getSpeedTimeline);
+router.get('/density-zones', (0, rbac_middleware_1.authorize)('admin', 'police', 'analyst'), analytics_controller_1.analyticsController.getDensityZones);

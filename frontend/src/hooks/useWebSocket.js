@@ -5,6 +5,7 @@ import { updateLivePosition } from '@/store/slices/trackingSlice';
 import { updateSignal } from '@/store/slices/signalSlice';
 import { addAlert } from '@/store/slices/alertSlice';
 import { addViolation } from '@/store/slices/violationSlice';
+import { addStolenSighting } from '@/store/slices/vehicleSlice';
 import toast from 'react-hot-toast';
 /**
  * Connects to the WebSocket on mount, subscribes to all real-time events
@@ -51,6 +52,11 @@ export function useWebSocket(enabled = true) {
         /* ── New violation ─────────────────────────────────────────────────── */
         socket.on('violation:new', (data) => {
             dispatch(addViolation(data.violation));
+        });
+        /* ── Stolen vehicle spotted ────────────────────────────────────────── */
+        socket.on('vehicle:stolen:spotted', (data) => {
+            dispatch(addStolenSighting(data));
+            toast.error(`🚨 Stolen vehicle spotted: ${data.plateNumber}`, { duration: 8000 });
         });
         return () => {
             wsService.disconnect();

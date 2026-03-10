@@ -27,6 +27,7 @@ from app.services import (
     helmet_detector,
     red_light_detector,
     plate_reader,
+    seatbelt_detector,
     backend_client,
 )
 from app.routers import (
@@ -52,6 +53,7 @@ async def lifespan(app: FastAPI):
     helmet_detector.load_model()
     red_light_detector.load_model()
     plate_reader.load_model()
+    seatbelt_detector.load_model()
 
     elapsed = time.perf_counter() - start
     logger.info(f"✅ All models loaded in {elapsed:.1f}s")
@@ -70,7 +72,8 @@ app = FastAPI(
     description=(
         "Computer-vision micro-service for the Autonomous Traffic Light "
         "Control System.  Provides vehicle detection, traffic-density "
-        "analysis, helmet detection, red-light violation detection, and "
+        "analysis, helmet detection, seatbelt detection, red-light violation "
+        "detection, speed violation detection, wrong-lane detection, and "
         "number-plate recognition."
     ),
     version="1.0.0",

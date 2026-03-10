@@ -118,6 +118,52 @@ class RedLightResult(BaseModel):
     processing_time_ms: float = 0.0
 
 
+class SeatbeltDetection(BaseModel):
+    bbox: BoundingBox
+    has_seatbelt: bool
+
+
+class SeatbeltDetectionResult(BaseModel):
+    frame_id: Optional[str] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    detections: list[SeatbeltDetection] = []
+    total_occupants: int = 0
+    without_seatbelt: int = 0
+    processing_time_ms: float = 0.0
+
+
+class SpeedViolation(BaseModel):
+    vehicle_bbox: BoundingBox
+    vehicle_type: VehicleType = VehicleType.UNKNOWN
+    speed: float = 0.0
+    speed_limit: float = 0.0
+
+
+class SpeedDetectionResult(BaseModel):
+    frame_id: Optional[str] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    signal_id: Optional[str] = None
+    speed_limit: float = 0.0
+    violations: list[SpeedViolation] = []
+    total_violations: int = 0
+    processing_time_ms: float = 0.0
+
+
+class WrongLaneViolation(BaseModel):
+    vehicle_bbox: BoundingBox
+    vehicle_type: VehicleType = VehicleType.UNKNOWN
+    reason: str = ""
+
+
+class WrongLaneDetectionResult(BaseModel):
+    frame_id: Optional[str] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    signal_id: Optional[str] = None
+    violations: list[WrongLaneViolation] = []
+    total_violations: int = 0
+    processing_time_ms: float = 0.0
+
+
 class PlateReading(BaseModel):
     bbox: BoundingBox
     plate_text: str

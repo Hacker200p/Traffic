@@ -140,6 +140,19 @@ const setupRedisPubSub = () => {
             logger_1.logger.error('Error broadcasting tracking update', { error });
         }
     });
+    // Stolen / blacklisted vehicle spotted → broadcast to alerts room
+    redis_1.redis.subscribe('vehicle:blacklisted:spotted', (message) => {
+        try {
+            const sighting = JSON.parse(message);
+            io.to('alerts').emit('vehicle:stolen:spotted', sighting);
+            // Also emit to anyone tracking this specific vehicle
+            io.to(`vehicle:${sighting.vehicleId}`).emit('vehicle:stolen:spotted', sighting);
+            logger_1.logger.debug('Broadcast stolen vehicle sighting', { vehicleId: sighting.vehicleId });
+        }
+        catch (error) {
+            logger_1.logger.error('Error broadcasting stolen vehicle sighting', { error });
+        }
+    });
     // Signal state changes → broadcast as signal:update to match frontend listener
     // Frontend expects: WsSignalUpdate = { signalId, state, remainingSeconds }
     redis_1.redis.subscribe('signals:state-change', (message) => {
