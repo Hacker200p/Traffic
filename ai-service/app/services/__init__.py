@@ -6,6 +6,8 @@ from app.services.plate_reader import plate_reader, PlateReader
 from app.services.seatbelt_detector import seatbelt_detector, SeatbeltDetector
 from app.services.speed_detector import speed_detector, SpeedDetector
 from app.services.wrong_lane_detector import wrong_lane_detector, WrongLaneDetector
+from app.services.accident_detector import accident_detector, AccidentDetector
+from app.services.route_prediction import route_prediction_service, RoutePredictionService
 from app.services.backend_client import backend_client, BackendClient
 
 __all__ = [
@@ -25,6 +27,10 @@ __all__ = [
     "SpeedDetector",
     "wrong_lane_detector",
     "WrongLaneDetector",
+    "accident_detector",
+    "AccidentDetector",
+    "route_prediction_service",
+    "RoutePredictionService",
     "backend_client",
     "BackendClient",
 ]

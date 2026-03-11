@@ -13,6 +13,7 @@ router.use(auth_middleware_1.authenticate);
 router.post('/', (0, rbac_middleware_1.authorize)('admin'), (0, validate_middleware_1.validate)(signals_validation_1.createSignalSchema), signals_controller_1.signalsController.create);
 router.get('/', (0, rbac_middleware_1.authorize)('admin', 'police', 'analyst'), (0, validate_middleware_1.validate)(signals_validation_1.signalQuerySchema, 'query'), signals_controller_1.signalsController.findAll);
 router.get('/group/:groupId', (0, rbac_middleware_1.authorize)('admin', 'police', 'analyst'), signals_controller_1.signalsController.getGroupSignals);
+router.get('/active-overrides', (0, rbac_middleware_1.authorize)('admin', 'police'), signals_controller_1.signalsController.getActiveOverrides);
 router.get('/:id', (0, rbac_middleware_1.authorize)('admin', 'police', 'analyst'), signals_controller_1.signalsController.findById);
 router.patch('/:id', (0, rbac_middleware_1.authorize)('admin'), (0, validate_middleware_1.validate)(signals_validation_1.updateSignalSchema), signals_controller_1.signalsController.update);
 router.post('/:id/state', (0, rbac_middleware_1.authorize)('admin', 'police'), (0, validate_middleware_1.validate)(signals_validation_1.signalStateSchema), signals_controller_1.signalsController.changeState);

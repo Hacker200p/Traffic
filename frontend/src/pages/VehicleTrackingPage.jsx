@@ -1,16 +1,19 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchVehicles, fetchVehicleById } from '@/store/slices/vehicleSlice';
+import { fetchVehicles, fetchVehicleById, fetchRiskProfile } from '@/store/slices/vehicleSlice';
 import { fetchVehicleRoute, fetchVehicleMovement, fetchCameras, clearRoute } from '@/store/slices/trackingSlice';
 import DataTable from '@/components/common/DataTable';
 import StatusBadge from '@/components/common/StatusBadge';
+import RiskBadge from '@/components/common/RiskBadge';
+import VehicleRiskPanel from '@/components/dashboard/VehicleRiskPanel';
 import TrafficMap from '@/components/map/TrafficMap';
 import VehicleMarker from '@/components/map/VehicleMarker';
 import RoutePolyline from '@/components/map/RoutePolyline';
 import CameraMarker from '@/components/map/CameraMarker';
 import { formatDateTime, formatTime, formatSpeed } from '@/utils/formatters';
 import { VEHICLE_ICONS, DEFAULT_PAGE_SIZE } from '@/utils/constants';
+import { vehiclesApi } from '@/api/vehicles.api';
 export default function VehicleTrackingPage() {
     const dispatch = useAppDispatch();
     const { items, loading, total, page } = useAppSelector((s) => s.vehicles);
@@ -32,10 +35,16 @@ export default function VehicleTrackingPage() {
         setSelectedId(id);
         dispatch(fetchVehicleById(id));
         dispatch(fetchVehicleRoute({ vehicleId: id }));
+        dispatch(fetchRiskProfile(id));
         if (plateNumber) {
             setPlateSearch(plateNumber);
         }
     };
+    const handleRecalculateRisk = useCallback(async () => {
+        if (!selectedId) return;
+        await vehiclesApi.recalculateRisk(selectedId);
+        dispatch(fetchRiskProfile(selectedId));
+    }, [selectedId, dispatch]);
     const handleTrackMovement = () => {
         if (!plateSearch.trim()) return;
         const params = { plateNumber: plateSearch.trim() };
@@ -92,6 +101,14 @@ export default function VehicleTrackingPage() {
             render: (v) => v.isBlacklisted ? (_jsx(StatusBadge, { label: "Lost", variant: "danger", dot: true })) : (_jsx(StatusBadge, { label: "Active", variant: "success", dot: true })),
         },
         {
+            key: 'risk',
+            header: 'Risk',
+            sortable: true,
+            render: (v) => v.risk_score != null && v.risk_score > 0
+                ? _jsx(RiskBadge, { score: v.risk_score, rating: v.risk_rating })
+                : _jsx("span", { className: "text-xs text-dark-500", children: "—" }),
+        },
+        {
             key: 'lastSeen',
             header: 'Last Seen',
             render: (v) => (v.updatedAt ? formatDateTime(v.updatedAt) : '—'),
@@ -128,6 +145,7 @@ export default function VehicleTrackingPage() {
                 selectedLive && (_jsx(VehicleMarker, { record: selectedLive })),
             ] }) }),
         ] }),
+        selectedId && _jsx(VehicleRiskPanel, { vehicleId: selectedId, onRecalculate: handleRecalculateRisk }),
         movement && (_jsxs("div", { className: "rounded-xl border border-dark-700 bg-dark-800 p-4 space-y-4", children: [
             _jsxs("div", { className: "flex items-center justify-between", children: [
                 _jsxs("div", { children: [

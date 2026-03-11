@@ -47,7 +47,22 @@ exports.config = {
         pingTimeout: parseInt(process.env.WS_PING_TIMEOUT || '20000', 10),
     },
     serviceAuth: {
-        apiKey: process.env.SERVICE_API_KEY || 'default-service-key-change-me',
+        apiKey: process.env.SERVICE_API_KEY || (process.env.NODE_ENV === 'production' ? undefined : 'dev-service-key-NOT-FOR-PRODUCTION'),
         systemUserId: process.env.SERVICE_SYSTEM_USER_ID || '00000000-0000-0000-0000-000000000001',
     },
+    encryption: {
+        key: process.env.ENCRYPTION_KEY || '',
+    },
 };
+// Fail fast if production is missing required secrets
+if (exports.config.env === 'production') {
+    if (!process.env.SERVICE_API_KEY) {
+        throw new Error('SERVICE_API_KEY must be set in production');
+    }
+    if (!process.env.ENCRYPTION_KEY) {
+        throw new Error('ENCRYPTION_KEY must be set in production (64-char hex string)');
+    }
+    if (exports.config.jwt.accessSecret === 'default-access-secret') {
+        throw new Error('JWT_ACCESS_SECRET must be set in production');
+    }
+}

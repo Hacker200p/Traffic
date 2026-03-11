@@ -1,6 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { NavLink } from 'react-router-dom';
-import { HomeIcon, MapIcon, TruckIcon, ShieldExclamationIcon, ChartBarIcon, MagnifyingGlassIcon, SignalIcon, } from '@heroicons/react/24/outline';
+import { HomeIcon, MapIcon, TruckIcon, ShieldExclamationIcon, ChartBarIcon, MagnifyingGlassIcon, SignalIcon, CommandLineIcon, ExclamationTriangleIcon, MapPinIcon, } from '@heroicons/react/24/outline';
 import { useAuth } from '@/hooks/useAuth';
 import clsx from 'clsx';
 const navItems = [
@@ -11,6 +11,9 @@ const navItems = [
     { to: '/violations', label: 'Violations', icon: ShieldExclamationIcon, roles: ['admin', 'police'] },
     { to: '/analytics', label: 'Analytics', icon: ChartBarIcon, roles: ['admin', 'analyst'] },
     { to: '/signals', label: 'Signals', icon: SignalIcon, roles: ['admin', 'police', 'analyst'] },
+    { to: '/accidents', label: 'Accidents', icon: ExclamationTriangleIcon, roles: ['admin', 'police'] },
+    { to: '/predict-route', label: 'Route Prediction', icon: MapPinIcon, roles: ['admin', 'police'] },
+    { to: '/admin', label: 'Control Panel', icon: CommandLineIcon, roles: ['admin'] },
 ];
 export default function Sidebar() {
     const { hasRole } = useAuth();

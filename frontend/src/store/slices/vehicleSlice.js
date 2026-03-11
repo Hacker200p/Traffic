@@ -5,6 +5,10 @@ const initialState = {
     selected: null,
     lostVehicles: [],
     stolenSightings: [],
+    latestPrediction: null,
+    riskProfile: null,
+    riskHistory: [],
+    highRiskVehicles: [],
     loading: false,
     error: null,
     total: 0,
@@ -37,6 +41,33 @@ export const fetchVehicleById = createAsyncThunk('vehicles/fetchById', async (id
         return rejectWithValue('Vehicle not found');
     }
 });
+export const fetchRiskProfile = createAsyncThunk('vehicles/fetchRiskProfile', async (id, { rejectWithValue }) => {
+    try {
+        const { data } = await vehiclesApi.getRiskProfile(id);
+        return data.data;
+    }
+    catch {
+        return rejectWithValue('Failed to load risk profile');
+    }
+});
+export const fetchRiskHistory = createAsyncThunk('vehicles/fetchRiskHistory', async (id, { rejectWithValue }) => {
+    try {
+        const { data } = await vehiclesApi.getRiskHistory(id);
+        return data.data;
+    }
+    catch {
+        return rejectWithValue('Failed to load risk history');
+    }
+});
+export const fetchHighRiskVehicles = createAsyncThunk('vehicles/fetchHighRisk', async (params, { rejectWithValue }) => {
+    try {
+        const { data } = await vehiclesApi.getHighRiskVehicles(params);
+        return data.data;
+    }
+    catch {
+        return rejectWithValue('Failed to load high-risk vehicles');
+    }
+});
 const vehicleSlice = createSlice({
     name: 'vehicles',
     initialState,
@@ -63,6 +94,12 @@ const vehicleSlice = createSlice({
             // Keep only last 50 sightings in memory
             if (state.stolenSightings.length > 50) state.stolenSightings.pop();
         },
+        setPrediction(state, action) {
+            state.latestPrediction = action.payload;
+        },
+        clearPrediction(state) {
+            state.latestPrediction = null;
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -82,8 +119,17 @@ const vehicleSlice = createSlice({
         })
             .addCase(fetchVehicleById.fulfilled, (state, { payload }) => {
             state.selected = payload;
+        })
+            .addCase(fetchRiskProfile.fulfilled, (state, { payload }) => {
+            state.riskProfile = payload;
+        })
+            .addCase(fetchRiskHistory.fulfilled, (state, { payload }) => {
+            state.riskHistory = payload;
+        })
+            .addCase(fetchHighRiskVehicles.fulfilled, (state, { payload }) => {
+            state.highRiskVehicles = payload;
         });
     },
 });
-export const { clearSelected, updateVehicleInList, addStolenSighting } = vehicleSlice.actions;
+export const { clearSelected, updateVehicleInList, addStolenSighting, setPrediction, clearPrediction } = vehicleSlice.actions;
 export default vehicleSlice.reducer;

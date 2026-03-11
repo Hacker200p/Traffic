@@ -13,4 +13,6 @@ export const trackingApi = {
     // Last sightings for lost/stolen vehicle tracking
     getLastSightings: (vehicleIds) => api.post('/movement/last-sightings', { vehicleIds }),
     getLastSighting: (vehicleId) => api.get(`/movement/last-sighting/${vehicleId}`),
+    // Predictive route analysis for stolen vehicles
+    predictRoute: (vehicleId) => api.get(`/movement/predict/${vehicleId}`),
 };

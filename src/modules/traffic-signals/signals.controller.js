@@ -41,6 +41,10 @@ class SignalsController {
         const signals = await signals_service_1.signalsService.getGroupSignals(req.params.groupId);
         (0, common_1.sendSuccess)(res, signals);
     });
+    getActiveOverrides = (0, common_1.asyncHandler)(async (req, res) => {
+        const overrides = await signals_service_1.signalsService.getActiveOverrides();
+        (0, common_1.sendSuccess)(res, overrides);
+    });
     delete = (0, common_1.asyncHandler)(async (req, res) => {
         await signals_service_1.signalsService.delete(req.params.id);
         (0, common_1.sendNoContent)(res);

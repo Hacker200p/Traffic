@@ -9,4 +9,8 @@ export const vehiclesApi = {
     reportLost: (id, body) => api.patch(`/vehicles/${id}`, { isBlacklisted: true, ...body }),
     markFound: (id) => api.patch(`/vehicles/${id}`, { isBlacklisted: false }),
     getLostVehicles: (params) => api.get('/vehicles', { params: { isBlacklisted: true, ...params } }),
+    getRiskProfile: (id) => api.get(`/vehicles/${id}/risk-profile`),
+    getRiskHistory: (id) => api.get(`/vehicles/${id}/risk-history`),
+    recalculateRisk: (id) => api.post(`/vehicles/${id}/recalculate-risk`),
+    getHighRiskVehicles: (params) => api.get('/vehicles/risk/high-risk', { params }),
 };

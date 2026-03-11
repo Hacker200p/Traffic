@@ -10,6 +10,9 @@ import LostVehiclePage from '@/pages/LostVehiclePage';
 import ViolationManagementPage from '@/pages/ViolationManagementPage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
 import SignalsPage from '@/pages/SignalsPage';
+import AdminControlPanel from '@/pages/AdminControlPanel';
+import AccidentDetectionPage from '@/pages/AccidentDetectionPage';
+import PredictiveRoutePage from '@/pages/PredictiveRoutePage';
 const router = createBrowserRouter([
     {
         path: '/login',
@@ -25,6 +28,9 @@ const router = createBrowserRouter([
             { path: 'violations', element: _jsx(ViolationManagementPage, {}) },
             { path: 'analytics', element: _jsx(AnalyticsPage, {}) },
             { path: 'signals', element: _jsx(SignalsPage, {}) },
+            { path: 'admin', element: _jsx(AdminControlPanel, {}) },
+            { path: 'accidents', element: _jsx(AccidentDetectionPage, {}) },
+            { path: 'predict-route', element: _jsx(PredictiveRoutePage, {}) },
         ],
     },
 ], { future: { v7_startTransition: true } });

@@ -1,5 +1,6 @@
 import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
 import { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchLostVehicles } from '@/store/slices/vehicleSlice';
 import DataTable from '@/components/common/DataTable';
@@ -15,6 +16,7 @@ import { Marker, Popup } from 'react-map-gl';
 import toast from 'react-hot-toast';
 export default function LostVehiclePage() {
     const dispatch = useAppDispatch();
+    const navigate = useNavigate();
     const { lostVehicles, loading, stolenSightings } = useAppSelector((s) => s.vehicles);
     const livePositions = useAppSelector((s) => s.tracking.livePositions);
     const [search, setSearch] = useState('');
@@ -103,7 +105,10 @@ export default function LostVehiclePage() {
         {
             key: 'actions',
             header: '',
-            render: (v) => (_jsx("button", { onClick: () => handleMarkFound(v.id), className: "rounded-lg bg-emerald-600/10 px-3 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-600/20", children: "Mark Found" })),
+            render: (v) => (_jsxs("div", { className: "flex items-center gap-2", children: [
+                _jsx("button", { onClick: () => navigate(`/predict-route?vehicleId=${v.id}`), className: "rounded-lg bg-primary-600/10 px-3 py-1 text-xs font-medium text-primary-400 hover:bg-primary-600/20", children: "Predict Route" }),
+                _jsx("button", { onClick: () => handleMarkFound(v.id), className: "rounded-lg bg-emerald-600/10 px-3 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-600/20", children: "Mark Found" }),
+            ] })),
         },
     ];
     // Selected vehicle sighting detail

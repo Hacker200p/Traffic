@@ -28,6 +28,8 @@ from app.services import (
     red_light_detector,
     plate_reader,
     seatbelt_detector,
+    accident_detector,
+    route_prediction_service,
     backend_client,
 )
 from app.routers import (
@@ -35,6 +37,8 @@ from app.routers import (
     density_router,
     plate_router,
     health_router,
+    accident_router,
+    prediction_router,
 )
 
 settings = get_settings()
@@ -54,6 +58,8 @@ async def lifespan(app: FastAPI):
     red_light_detector.load_model()
     plate_reader.load_model()
     seatbelt_detector.load_model()
+    accident_detector.load_model()
+    route_prediction_service.load_model()
 
     elapsed = time.perf_counter() - start
     logger.info(f"✅ All models loaded in {elapsed:.1f}s")
@@ -73,8 +79,8 @@ app = FastAPI(
         "Computer-vision micro-service for the Autonomous Traffic Light "
         "Control System.  Provides vehicle detection, traffic-density "
         "analysis, helmet detection, seatbelt detection, red-light violation "
-        "detection, speed violation detection, wrong-lane detection, and "
-        "number-plate recognition."
+        "detection, speed violation detection, wrong-lane detection, "
+        "accident detection, and number-plate recognition."
     ),
     version="1.0.0",
     lifespan=lifespan,
@@ -119,6 +125,8 @@ app.include_router(detection_router, prefix="/api/v1")
 app.include_router(density_router, prefix="/api/v1")
 app.include_router(plate_router, prefix="/api/v1")
 app.include_router(health_router, prefix="/api/v1")
+app.include_router(accident_router, prefix="/api/v1")
+app.include_router(prediction_router, prefix="/api/v1")
 
 
 # ── Root ─────────────────────────────────────────────────────────────────────

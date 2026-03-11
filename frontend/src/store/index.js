@@ -6,6 +6,7 @@ import trackingReducer from './slices/trackingSlice';
 import alertReducer from './slices/alertSlice';
 import signalReducer from './slices/signalSlice';
 import analyticsReducer from './slices/analyticsSlice';
+import accidentReducer from './slices/accidentSlice';
 export const store = configureStore({
     reducer: {
         auth: authReducer,
@@ -15,6 +16,7 @@ export const store = configureStore({
         alerts: alertReducer,
         signals: signalReducer,
         analytics: analyticsReducer,
+        accidents: accidentReducer,
     },
     devTools: import.meta.env.DEV,
 });

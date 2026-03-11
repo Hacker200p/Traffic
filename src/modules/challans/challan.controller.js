@@ -44,6 +44,32 @@ class ChallanController {
         const result = await challan_service_1.challanService.resendNotification(req.params.id);
         (0, common_1.sendSuccess)(res, result);
     });
+
+    /** GET /challans/pending — List challans pending approval */
+    getPending = (0, common_1.asyncHandler)(async (req, res) => {
+        const result = await challan_service_1.challanService.findPendingApproval(req.query);
+        (0, common_1.sendPaginated)(res, result.data, result.total, result.page, result.limit);
+    });
+
+    /** POST /challans/:id/approve — Approve a pending challan */
+    approve = (0, common_1.asyncHandler)(async (req, res) => {
+        const challan = await challan_service_1.challanService.approveChallan(
+            req.params.id,
+            req.user.userId,
+            req.body
+        );
+        (0, common_1.sendSuccess)(res, challan);
+    });
+
+    /** POST /challans/:id/reject — Reject a pending challan */
+    reject = (0, common_1.asyncHandler)(async (req, res) => {
+        const challan = await challan_service_1.challanService.rejectChallan(
+            req.params.id,
+            req.user.userId,
+            req.body.reason
+        );
+        (0, common_1.sendSuccess)(res, challan);
+    });
 }
 
 exports.ChallanController = ChallanController;

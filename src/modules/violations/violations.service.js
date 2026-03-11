@@ -7,6 +7,7 @@ const errors_1 = require("../../common/errors");
 const logger_1 = require("../../common/logger");
 const redis_1 = require("../../config/redis");
 const challan_service_1 = require("../challans/challan.service");
+const audit_service_1 = require("../../common/audit.service");
 class ViolationsService {
     async create(input) {
         const id = (0, uuid_1.v4)();
@@ -84,6 +85,7 @@ class ViolationsService {
         if (input.reviewedBy) {
             fields.push(`reviewed_by = $${idx++}`);
             values.push(input.reviewedBy);
+            fields.push(`reviewed_at = NOW()`);
         }
         if (input.reviewNotes) {
             fields.push(`review_notes = $${idx++}`);
@@ -99,6 +101,16 @@ class ViolationsService {
         values.push(id);
         await connection_1.db.query(`UPDATE violations SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`, values);
         logger_1.logger.info('Violation updated', { violationId: id, status: input.status });
+        // Audit log for violation review
+        if (input.status && input.reviewedBy) {
+            audit_service_1.auditService.log({
+                userId: input.reviewedBy,
+                action: `violation_${input.status}`,
+                entityType: 'violation',
+                entityId: id,
+                newValues: { status: input.status, reviewNotes: input.reviewNotes, fineAmount: input.fineAmount },
+            }).catch(() => {});
+        }
         // Auto-generate e-challan when violation is confirmed
         if (input.status === 'confirmed') {
             challan_service_1.challanService.generateForViolation(id, input.fineAmount).catch(err => {

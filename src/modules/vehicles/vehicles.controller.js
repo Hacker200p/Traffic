@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.vehiclesController = exports.VehiclesController = void 0;
 const common_1 = require("../../common");
 const vehicles_service_1 = require("./vehicles.service");
+const risk_service_1 = require("./risk.service");
 class VehiclesController {
     create = (0, common_1.asyncHandler)(async (req, res) => {
         const vehicle = await vehicles_service_1.vehiclesService.create(req.body);
@@ -27,6 +28,27 @@ class VehiclesController {
     delete = (0, common_1.asyncHandler)(async (req, res) => {
         await vehicles_service_1.vehiclesService.delete(req.params.id);
         (0, common_1.sendNoContent)(res);
+    });
+    getRiskProfile = (0, common_1.asyncHandler)(async (req, res) => {
+        const profile = await risk_service_1.riskService.getRiskProfile(req.params.id);
+        (0, common_1.sendSuccess)(res, profile);
+    });
+    getRiskHistory = (0, common_1.asyncHandler)(async (req, res) => {
+        const history = await risk_service_1.riskService.getRiskHistory(req.params.id);
+        (0, common_1.sendSuccess)(res, history);
+    });
+    recalculateRisk = (0, common_1.asyncHandler)(async (req, res) => {
+        const profile = await risk_service_1.riskService.updateRiskScore(req.params.id);
+        (0, common_1.sendSuccess)(res, profile);
+    });
+    recalculateAll = (0, common_1.asyncHandler)(async (_req, res) => {
+        const result = await risk_service_1.riskService.recalculateAll();
+        (0, common_1.sendSuccess)(res, result);
+    });
+    getHighRiskVehicles = (0, common_1.asyncHandler)(async (req, res) => {
+        const limit = parseInt(req.query.limit || '20', 10);
+        const data = await risk_service_1.riskService.getHighRiskVehicles(limit);
+        (0, common_1.sendSuccess)(res, data);
     });
 }
 exports.VehiclesController = VehiclesController;

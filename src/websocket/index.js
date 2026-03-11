@@ -177,6 +177,61 @@ const setupRedisPubSub = () => {
             logger_1.logger.error('Error broadcasting signal state change', { error });
         }
     });
+    // Accident detected → broadcast to all alerts + police rooms
+    redis_1.redis.subscribe('accidents:new', (message) => {
+        try {
+            const accident = JSON.parse(message);
+            io.to('alerts').emit('accident:new', { accident });
+            io.to('role:police').emit('accident:new', { accident });
+            io.to('role:admin').emit('accident:new', { accident });
+            // Critical accidents → emit to ALL clients
+            if (accident.severity === 'critical') {
+                io.emit('accident:critical', { accident });
+            }
+            logger_1.logger.debug('Broadcast accident detection via WebSocket', { accidentId: accident.id });
+        }
+        catch (error) {
+            logger_1.logger.error('Error broadcasting accident', { error });
+        }
+    });
+    // Accident status updates
+    redis_1.redis.subscribe('accidents:update', (message) => {
+        try {
+            const accident = JSON.parse(message);
+            io.to('alerts').emit('accident:update', { accident });
+        }
+        catch (error) {
+            logger_1.logger.error('Error broadcasting accident update', { error });
+        }
+    });
+    // Predictive route updates → broadcast to police + admin
+    redis_1.redis.subscribe('prediction:update', (message) => {
+        try {
+            const prediction = JSON.parse(message);
+            io.to('role:police').emit('prediction:update', prediction);
+            io.to('role:admin').emit('prediction:update', prediction);
+            // Also emit to anyone tracking this specific vehicle
+            if (prediction.vehicleId) {
+                io.to(`vehicle:${prediction.vehicleId}`).emit('prediction:update', prediction);
+            }
+            logger_1.logger.debug('Broadcast route prediction via WebSocket', { vehicleId: prediction.vehicleId });
+        }
+        catch (error) {
+            logger_1.logger.error('Error broadcasting route prediction', { error });
+        }
+    });
+    // Police-specific accident alert (with GPS coordinates)
+    redis_1.redis.subscribe('accidents:police-alert', (message) => {
+        try {
+            const alertData = JSON.parse(message);
+            io.to('role:police').emit('accident:police-alert', alertData);
+            io.to('role:admin').emit('accident:police-alert', alertData);
+            logger_1.logger.debug('Broadcast police accident alert', { accidentId: alertData.accidentId });
+        }
+        catch (error) {
+            logger_1.logger.error('Error broadcasting police accident alert', { error });
+        }
+    });
 };
 const getIO = () => {
     if (!io) {

@@ -39,6 +39,26 @@ class AnalyticsController {
         const data = await analytics_service_1.analyticsService.getDensityZones(req.query);
         (0, common_1.sendSuccess)(res, data);
     });
+
+    getPeakTrafficHours = (0, common_1.asyncHandler)(async (req, res) => {
+        const data = await analytics_service_1.analyticsService.getPeakTrafficHours(req.query);
+        (0, common_1.sendSuccess)(res, data);
+    });
+
+    getAccidentProneZones = (0, common_1.asyncHandler)(async (req, res) => {
+        const data = await analytics_service_1.analyticsService.getAccidentProneZones(req.query);
+        (0, common_1.sendSuccess)(res, data);
+    });
+
+    getMonthlyTrends = (0, common_1.asyncHandler)(async (req, res) => {
+        const data = await analytics_service_1.analyticsService.getMonthlyTrends(req.query);
+        (0, common_1.sendSuccess)(res, data);
+    });
+
+    getVehicleTypeDistribution = (0, common_1.asyncHandler)(async (req, res) => {
+        const data = await analytics_service_1.analyticsService.getVehicleTypeDistribution();
+        (0, common_1.sendSuccess)(res, data);
+    });
 }
 exports.AnalyticsController = AnalyticsController;
 exports.analyticsController = new AnalyticsController();

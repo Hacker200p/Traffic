@@ -34,6 +34,9 @@ app.use((0, compression_1.default)());
 // ---- Body parsers ----
 app.use(express_1.default.json({ limit: '10mb' }));
 app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
+// ---- Input sanitization ----
+const sanitize_middleware_1 = require("./middleware/sanitize.middleware");
+app.use(sanitize_middleware_1.sanitizeInput);
 // ---- Rate limiting (production only) ----
 if (process.env.NODE_ENV === 'production') {
 const limiter = (0, express_rate_limit_1.default)({

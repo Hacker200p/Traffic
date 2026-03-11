@@ -8,6 +8,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const config_1 = require("../config");
 const redis_1 = require("../config/redis");
 const errors_1 = require("../common/errors");
+const audit_service_1 = require("../common/audit.service");
 const authenticate = async (req, _res, next) => {
     try {
         const authHeader = req.headers.authorization;
@@ -25,6 +26,14 @@ const authenticate = async (req, _res, next) => {
         next();
     }
     catch (error) {
+        // Log authentication failures for security monitoring
+        audit_service_1.auditService.log({
+            action: 'auth_failure',
+            entityType: 'auth',
+            ipAddress: req.ip,
+            userAgent: req.get('user-agent'),
+            newValues: { reason: error.message, path: req.originalUrl },
+        }).catch(() => {});
         if (error instanceof errors_1.UnauthorizedError) {
             next(error);
             return;

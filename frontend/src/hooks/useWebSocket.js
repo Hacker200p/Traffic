@@ -5,7 +5,8 @@ import { updateLivePosition } from '@/store/slices/trackingSlice';
 import { updateSignal } from '@/store/slices/signalSlice';
 import { addAlert } from '@/store/slices/alertSlice';
 import { addViolation } from '@/store/slices/violationSlice';
-import { addStolenSighting } from '@/store/slices/vehicleSlice';
+import { addStolenSighting, setPrediction } from '@/store/slices/vehicleSlice';
+import { addAccident, updateAccident } from '@/store/slices/accidentSlice';
 import toast from 'react-hot-toast';
 /**
  * Connects to the WebSocket on mount, subscribes to all real-time events
@@ -57,8 +58,22 @@ export function useWebSocket(enabled = true) {
         socket.on('vehicle:stolen:spotted', (data) => {
             dispatch(addStolenSighting(data));
             toast.error(`🚨 Stolen vehicle spotted: ${data.plateNumber}`, { duration: 8000 });
+        });        /* ── Route prediction update ────────────────────────────────────── */
+        socket.on('prediction:update', (data) => {
+            dispatch(setPrediction(data));
+            toast(`📍 Route prediction updated: ${data.plateNumber || 'vehicle'}`, { icon: '🔮', duration: 5000 });
         });
-        return () => {
+        /* ── Accident detected ─────────────────────────────────────────── */
+        socket.on('accident:new', (data) => {
+            dispatch(addAccident(data.accident));
+            toast.error(`🚨 Accident detected: ${(data.accident.detection_type || 'unknown').replace(/_/g, ' ')}`, { duration: 8000 });
+        });
+        socket.on('accident:update', (data) => {
+            dispatch(updateAccident(data.accident));
+        });
+        socket.on('accident:critical', (data) => {
+            toast.error(`⚠️ CRITICAL ACCIDENT: ${data.accident.description || 'Immediate response required'}`, { duration: 10000 });
+        });        return () => {
             wsService.disconnect();
             mounted.current = false;
         };

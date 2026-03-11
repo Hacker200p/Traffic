@@ -6,6 +6,7 @@ const connection_1 = require("../../database/connection");
 const errors_1 = require("../../common/errors");
 const logger_1 = require("../../common/logger");
 const redis_1 = require("../../config/redis");
+const audit_service_1 = require("../../common/audit.service");
 class SignalsService {
     async create(input) {
         const id = (0, uuid_1.v4)();
@@ -129,6 +130,14 @@ class SignalsService {
             timestamp: new Date().toISOString(),
         }));
         logger_1.logger.info('Signal state changed', { signalId: id, from: signal.current_state, to: input.state });
+        audit_service_1.auditService.log({
+            userId: changedBy,
+            action: 'signal_state_change',
+            entityType: 'signal',
+            entityId: id,
+            oldValues: { state: signal.current_state },
+            newValues: { state: input.state, reason: input.reason, overrideUntil: input.overrideUntil },
+        }).catch(() => {});
         return this.findById(id);
     }
     async getStateLog(signalId, page = 1, limit = 50) {
@@ -161,6 +170,24 @@ class SignalsService {
        FROM traffic_signals ts
        WHERE ts.group_id = $1
        ORDER BY ts.direction`, [groupId]);
+        return result.rows;
+    }
+    async getActiveOverrides() {
+        const result = await connection_1.db.query(
+            `SELECT ts.id, ts.name, ts.intersection_name, ts.current_state, ts.override_until,
+                    ts.last_state_change, ts.is_online,
+                    ssl.changed_by, ssl.reason, ssl.created_at as override_started,
+                    u.first_name || ' ' || u.last_name as changed_by_name
+             FROM traffic_signals ts
+             LEFT JOIN LATERAL (
+                 SELECT * FROM signal_state_log
+                 WHERE signal_id = ts.id
+                 ORDER BY created_at DESC LIMIT 1
+             ) ssl ON true
+             LEFT JOIN users u ON ssl.changed_by = u.id
+             WHERE ts.override_until IS NOT NULL AND ts.override_until > NOW()
+             ORDER BY ts.override_until ASC`
+        );
         return result.rows;
     }
     async delete(id) {

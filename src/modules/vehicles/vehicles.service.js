@@ -5,6 +5,15 @@ const uuid_1 = require("uuid");
 const connection_1 = require("../../database/connection");
 const errors_1 = require("../../common/errors");
 const logger_1 = require("../../common/logger");
+const audit_service_1 = require("../../common/audit.service");
+const encryption_1 = require("../../common/encryption");
+
+function decryptVehicleRow(row) {
+    if (!row) return row;
+    if (row.owner_contact) row.owner_contact = encryption_1.encryptionUtil.decrypt(row.owner_contact);
+    return row;
+}
+
 class VehiclesService {
     async create(input) {
         const existing = await connection_1.db.query('SELECT id FROM vehicles WHERE plate_number = $1', [input.plateNumber]);
@@ -12,11 +21,12 @@ class VehiclesService {
             throw new errors_1.ConflictError('Vehicle with this plate number already exists');
         }
         const id = (0, uuid_1.v4)();
+        const encryptedContact = input.ownerContact ? encryption_1.encryptionUtil.encrypt(input.ownerContact) : input.ownerContact;
         const result = await connection_1.db.query(`INSERT INTO vehicles (id, plate_number, type, make, model, color, year, owner_name, owner_contact, is_blacklisted, notes, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
-       RETURNING *`, [id, input.plateNumber, input.type, input.make, input.model, input.color, input.year, input.ownerName, input.ownerContact, input.isBlacklisted, input.notes]);
+       RETURNING *`, [id, input.plateNumber, input.type, input.make, input.model, input.color, input.year, input.ownerName, encryptedContact, input.isBlacklisted, input.notes]);
         logger_1.logger.info('Vehicle created', { vehicleId: id, plateNumber: input.plateNumber });
-        return result.rows[0];
+        return decryptVehicleRow(result.rows[0]);
     }
     async findAll(query) {
         const { page, limit, type, plateNumber, isBlacklisted } = query;
@@ -40,21 +50,21 @@ class VehiclesService {
         const countResult = await connection_1.db.query(`SELECT COUNT(*) FROM vehicles ${whereClause}`, params);
         const total = parseInt(countResult.rows[0].count, 10);
         const dataResult = await connection_1.db.query(`SELECT * FROM vehicles ${whereClause} ORDER BY created_at DESC LIMIT $${paramIdx++} OFFSET $${paramIdx}`, [...params, limit, offset]);
-        return { data: dataResult.rows, total, page, limit };
+        return { data: dataResult.rows.map(decryptVehicleRow), total, page, limit };
     }
     async findById(id) {
         const result = await connection_1.db.query('SELECT * FROM vehicles WHERE id = $1', [id]);
         if (result.rows.length === 0) {
             throw new errors_1.NotFoundError('Vehicle');
         }
-        return result.rows[0];
+        return decryptVehicleRow(result.rows[0]);
     }
     async findByPlate(plateNumber) {
         const result = await connection_1.db.query('SELECT * FROM vehicles WHERE plate_number = $1', [plateNumber]);
         if (result.rows.length === 0) {
             throw new errors_1.NotFoundError('Vehicle');
         }
-        return result.rows[0];
+        return decryptVehicleRow(result.rows[0]);
     }
     async update(id, input) {
         const existing = await this.findById(id);
@@ -75,7 +85,7 @@ class VehiclesService {
         for (const [key, col] of Object.entries(fieldMap)) {
             if (input[key] !== undefined) {
                 fields.push(`${col} = $${idx++}`);
-                values.push(input[key]);
+                values.push(key === 'ownerContact' ? (0, encryption_1.encrypt)(input[key]) : input[key]);
             }
         }
         if (fields.length === 0)
@@ -84,7 +94,17 @@ class VehiclesService {
         values.push(id);
         const result = await connection_1.db.query(`UPDATE vehicles SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`, values);
         logger_1.logger.info('Vehicle updated', { vehicleId: id });
-        return result.rows[0];
+        // Audit log for sensitive changes (blacklist status)
+        if (input.isBlacklisted !== undefined && input.isBlacklisted !== existing.is_blacklisted) {
+            audit_service_1.auditService.log({
+                action: input.isBlacklisted ? 'vehicle_marked_stolen' : 'vehicle_marked_recovered',
+                entityType: 'vehicle',
+                entityId: id,
+                oldValues: { isBlacklisted: existing.is_blacklisted },
+                newValues: { isBlacklisted: input.isBlacklisted, notes: input.notes },
+            }).catch(() => {});
+        }
+        return decryptVehicleRow(result.rows[0]);
     }
     async delete(id) {
         await this.findById(id);

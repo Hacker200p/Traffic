@@ -8,6 +8,7 @@ export const signalsApi = {
         ...(mode === 'emergency' ? { currentState: 'red' } : {}),
     }),
     getGroupSignals: (groupId) => api.get(`/signals/group/${groupId}`),
+    getActiveOverrides: () => api.get('/signals/active-overrides'),
     getStateLog: (id, params) => api.get(`/signals/${id}/log`, { params }),
     createSchedule: (id, body) => api.post(`/signals/${id}/schedule`, body),
     getSchedules: (id) => api.get(`/signals/${id}/schedules`),

@@ -7,6 +7,10 @@ const initialState = {
     densityTimeline: [],
     vehicleCountTimeline: [],
     densityZones: [],
+    peakHours: [],
+    accidentZones: [],
+    monthlyTrends: [],
+    vehicleTypes: [],
     loading: false,
     error: null,
 };
@@ -74,6 +78,42 @@ export const fetchDensityZones = createAsyncThunk('analytics/densityZones', asyn
         return rejectWithValue('Failed to load density zones');
     }
 });
+export const fetchPeakHours = createAsyncThunk('analytics/peakHours', async (params, { rejectWithValue }) => {
+    try {
+        const { data } = await analyticsApi.getPeakHours(params);
+        return data.data;
+    }
+    catch {
+        return rejectWithValue('Failed to load peak hours');
+    }
+});
+export const fetchAccidentZones = createAsyncThunk('analytics/accidentZones', async (params, { rejectWithValue }) => {
+    try {
+        const { data } = await analyticsApi.getAccidentZones(params);
+        return data.data;
+    }
+    catch {
+        return rejectWithValue('Failed to load accident zones');
+    }
+});
+export const fetchMonthlyTrends = createAsyncThunk('analytics/monthlyTrends', async (params, { rejectWithValue }) => {
+    try {
+        const { data } = await analyticsApi.getMonthlyTrends(params);
+        return data.data;
+    }
+    catch {
+        return rejectWithValue('Failed to load monthly trends');
+    }
+});
+export const fetchVehicleTypes = createAsyncThunk('analytics/vehicleTypes', async (_, { rejectWithValue }) => {
+    try {
+        const { data } = await analyticsApi.getVehicleTypes();
+        return data.data;
+    }
+    catch {
+        return rejectWithValue('Failed to load vehicle types');
+    }
+});
 const analyticsSlice = createSlice({
     name: 'analytics',
     initialState,
@@ -93,7 +133,11 @@ const analyticsSlice = createSlice({
             .addCase(fetchViolationAnalytics.fulfilled, (state, { payload }) => { state.violationStats = payload; })
             .addCase(fetchDensityTimeline.fulfilled, (state, { payload }) => { state.densityTimeline = payload; })
             .addCase(fetchVehicleCountTimeline.fulfilled, (state, { payload }) => { state.vehicleCountTimeline = payload; })
-            .addCase(fetchDensityZones.fulfilled, (state, { payload }) => { state.densityZones = payload; });
+            .addCase(fetchDensityZones.fulfilled, (state, { payload }) => { state.densityZones = payload; })
+            .addCase(fetchPeakHours.fulfilled, (state, { payload }) => { state.peakHours = payload; })
+            .addCase(fetchAccidentZones.fulfilled, (state, { payload }) => { state.accidentZones = payload; })
+            .addCase(fetchMonthlyTrends.fulfilled, (state, { payload }) => { state.monthlyTrends = payload; })
+            .addCase(fetchVehicleTypes.fulfilled, (state, { payload }) => { state.vehicleTypes = payload; });
     },
 });
 export default analyticsSlice.reducer;

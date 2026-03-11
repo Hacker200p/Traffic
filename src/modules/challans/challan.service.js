@@ -7,6 +7,7 @@ const errors_1 = require("../../common/errors");
 const logger_1 = require("../../common/logger");
 const redis_1 = require("../../config/redis");
 const notification_service_1 = require("../notifications/notification.service");
+const audit_service_1 = require("../../common/audit.service");
 
 /**
  * Default fine amounts by violation type (in currency units).
@@ -88,7 +89,7 @@ class ChallanService {
                 (id, challan_number, violation_id, vehicle_id, plate_number,
                  owner_name, owner_contact, violation_type, fine_amount, due_date,
                  status, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'issued', NOW(), NOW())
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending_approval', NOW(), NOW())
              RETURNING *`,
             [
                 id,
@@ -112,49 +113,10 @@ class ChallanService {
             [id, fineAmount, violationId]
         );
 
-        // 5. Send notifications
-        let notificationResult = { results: [], channels: [] };
-        if (violation.owner_contact) {
-            try {
-                notificationResult = await notification_service_1.notificationService.sendChallanNotification(
-                    challanRecord,
-                    {
-                        name: violation.owner_name,
-                        contact: violation.owner_contact,
-                        vehicleId: violation.veh_id || violation.vehicle_id,
-                    }
-                );
-
-                // Update challan with notification status
-                const sentChannels = notificationResult.channels;
-                const notifStatus = sentChannels.length > 0 ? 'sent' : 'failed';
-                await connection_1.db.query(
-                    `UPDATE challans
-                     SET notification_channels = $1,
-                         notification_sent_at = NOW(),
-                         notification_status = $2,
-                         status = CASE WHEN $2 = 'sent' THEN 'sent' ELSE status END,
-                         updated_at = NOW()
-                     WHERE id = $3`,
-                    [sentChannels, notifStatus, id]
-                );
-            } catch (err) {
-                logger_1.logger.error('Failed to send challan notification', { challanId: id, error: err.message });
-            }
-        } else {
-            logger_1.logger.warn('No owner contact for challan notification', {
-                challanId: id,
-                plateNumber: violation.plate_number,
-            });
-        }
-
         // Publish for real-time updates
-        await redis_1.redis.publish('challans:new', JSON.stringify({
-            ...challanRecord,
-            notification: notificationResult,
-        }));
+        await redis_1.redis.publish('challans:new', JSON.stringify(challanRecord));
 
-        logger_1.logger.info('E-Challan generated', {
+        logger_1.logger.info('E-Challan generated (pending approval)', {
             challanId: id,
             challanNumber,
             violationId,
@@ -287,6 +249,115 @@ class ChallanService {
         return { challanId: id, notification: result };
     }
 
+    async approveChallan(id, approvedBy, input = {}) {
+        const challan = await this.findById(id);
+        if (challan.status !== 'pending_approval') {
+            throw new errors_1.BadRequestError('Only pending challans can be approved');
+        }
+
+        const fineAmount = input.adjustedFineAmount || challan.fine_amount;
+
+        await connection_1.db.query(
+            `UPDATE challans
+             SET status = 'issued',
+                 fine_amount = $1,
+                 approved_by = $2,
+                 approval_notes = $3,
+                 approved_at = NOW(),
+                 updated_at = NOW()
+             WHERE id = $4`,
+            [fineAmount, approvedBy, input.notes || null, id]
+        );
+
+        // Send notification after approval
+        if (challan.owner_contact) {
+            try {
+                const updatedChallan = await this.findById(id);
+                const notifResult = await notification_service_1.notificationService.sendChallanNotification(
+                    updatedChallan,
+                    {
+                        name: challan.owner_name,
+                        contact: challan.owner_contact,
+                        vehicleId: challan.vehicle_id,
+                    }
+                );
+                const sentChannels = notifResult.channels;
+                const notifStatus = sentChannels.length > 0 ? 'sent' : 'failed';
+                await connection_1.db.query(
+                    `UPDATE challans
+                     SET notification_channels = $1, notification_sent_at = NOW(),
+                         notification_status = $2,
+                         status = CASE WHEN $2 = 'sent' THEN 'sent' ELSE status END,
+                         updated_at = NOW()
+                     WHERE id = $3`,
+                    [sentChannels, notifStatus, id]
+                );
+            } catch (err) {
+                logger_1.logger.error('Failed to send notification after challan approval', { challanId: id, error: err.message });
+            }
+        }
+
+        logger_1.logger.info('Challan approved', { challanId: id, approvedBy, fineAmount });
+        audit_service_1.auditService.log({
+            userId: approvedBy,
+            action: 'challan_approved',
+            entityType: 'challan',
+            entityId: id,
+            newValues: { fineAmount, notes: input.notes },
+        }).catch(() => {});
+        return this.findById(id);
+    }
+
+    async rejectChallan(id, rejectedBy, reason) {
+        const challan = await this.findById(id);
+        if (challan.status !== 'pending_approval') {
+            throw new errors_1.BadRequestError('Only pending challans can be rejected');
+        }
+
+        await connection_1.db.query(
+            `UPDATE challans
+             SET status = 'rejected',
+                 approved_by = $1,
+                 approval_notes = $2,
+                 approved_at = NOW(),
+                 updated_at = NOW()
+             WHERE id = $3`,
+            [rejectedBy, reason, id]
+        );
+
+        logger_1.logger.info('Challan rejected', { challanId: id, rejectedBy, reason });
+        audit_service_1.auditService.log({
+            userId: rejectedBy,
+            action: 'challan_rejected',
+            entityType: 'challan',
+            entityId: id,
+            newValues: { reason },
+        }).catch(() => {});
+        return this.findById(id);
+    }
+
+    async findPendingApproval(query = {}) {
+        const { page = 1, limit = 20 } = query;
+        const offset = (page - 1) * limit;
+
+        const countResult = await connection_1.db.query(
+            `SELECT COUNT(*) FROM challans WHERE status = 'pending_approval'`
+        );
+        const total = parseInt(countResult.rows[0].count, 10);
+
+        const dataResult = await connection_1.db.query(
+            `SELECT c.*, v.description as violation_description, v.evidence_url, v.severity
+             FROM challans c
+             LEFT JOIN violations v ON c.violation_id = v.id
+             WHERE c.status = 'pending_approval'
+             ORDER BY c.created_at ASC
+             LIMIT $1 OFFSET $2`,
+            [limit, offset]
+        );
+
+        return { data: dataResult.rows, total, page, limit };
+    }
+
     async getStats(startDate, endDate) {
         const conditions = [];
         const params = [];
@@ -306,10 +377,12 @@ class ChallanService {
         const result = await connection_1.db.query(
             `SELECT
                 COUNT(*) as total,
+                COUNT(*) FILTER (WHERE status = 'pending_approval') as pending_approval,
                 COUNT(*) FILTER (WHERE status = 'issued') as issued,
                 COUNT(*) FILTER (WHERE status = 'sent') as sent,
                 COUNT(*) FILTER (WHERE status = 'paid') as paid,
                 COUNT(*) FILTER (WHERE status = 'overdue') as overdue,
+                COUNT(*) FILTER (WHERE status = 'rejected') as rejected,
                 COALESCE(SUM(fine_amount), 0) as total_fines,
                 COALESCE(SUM(fine_amount) FILTER (WHERE status = 'paid'), 0) as collected_fines
              FROM challans ${where}`,

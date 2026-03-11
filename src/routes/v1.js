@@ -14,6 +14,7 @@ const challans_routes_1 = require("../modules/challans/challan.routes");
 const movement_routes_1 = require("../modules/tracking/movement.routes");
 const restricted_zones_routes_1 = require("../modules/restricted-zones/restricted-zones.routes");
 const notif_prefs_routes_1 = require("../modules/notifications/notif-prefs.routes");
+const accidents_routes_1 = require("../modules/accidents/accidents.routes");
 const router = (0, express_1.Router)();
 exports.apiV1Router = router;
 router.use('/auth', auth_routes_1.authRouter);
@@ -27,5 +28,8 @@ router.use('/challans', challans_routes_1.challansRouter);
 router.use('/movement', movement_routes_1.movementRouter);
 router.use('/restricted-zones', restricted_zones_routes_1.restrictedZonesRouter);
 router.use('/notification-preferences', notif_prefs_routes_1.notifPrefsRouter);
+router.use('/accidents', accidents_routes_1.accidentsRouter);
+const audit_routes_1 = require("./audit");
+router.use('/audit', audit_routes_1.auditRouter);
 // AI microservice integration (service-to-service, API-key auth)
 router.use('/integration', integration_routes_1.integrationRouter);

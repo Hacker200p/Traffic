@@ -10,6 +10,8 @@ const movement_service_1 = require("../tracking/movement.service");
 const alerts_service_1 = require("../alerts/alerts.service");
 const signals_service_1 = require("../traffic-signals/signals.service");
 const restricted_zones_service_1 = require("../restricted-zones/restricted-zones.service");
+const accidents_service_1 = require("../accidents/accidents.service");
+const prediction_service_1 = require("../tracking/prediction.service");
 /**
  * Integration service — transforms AI microservice payloads into the shapes
  * expected by domain services, handles vehicle auto-lookup / auto-creation,
@@ -91,6 +93,19 @@ class IntegrationService {
                 vehicle_id: input.vehicle_id,
             }).catch(err => {
                 logger_1.logger.error('Restricted zone check on tracking failed', { err: err.message });
+            });
+        }
+
+        // Accident detection — analyse recent GPS history for sudden stops / erratic motion
+        if (input.vehicle_id) {
+            accidents_service_1.accidentsService.analyseFromTracking(input.vehicle_id, {
+                latitude: input.latitude,
+                longitude: input.longitude,
+                speed: input.speed,
+                heading: input.heading,
+                timestamp: input.timestamp,
+            }).catch(err => {
+                logger_1.logger.error('Accident analysis on tracking failed', { err: err.message });
             });
         }
 
@@ -315,6 +330,11 @@ class IntegrationService {
             detectedAt: new Date().toISOString(),
         }));
 
+        // Auto-trigger predictive route analysis and broadcast result
+        this._autoPredictRoute(vehicleId, plateText).catch(err => {
+            logger_1.logger.error('Auto-prediction on blacklist detection failed', { vehicleId, err: err.message });
+        });
+
         logger_1.logger.warn('Blacklist alert created for stolen vehicle', { vehicleId, plateText, cameraId });
     }
 
@@ -366,6 +386,25 @@ class IntegrationService {
                 zoneId: zone.id,
             });
         }
+    }
+    // ── Auto-prediction helper ────────────────────────────────────────
+    async _autoPredictRoute(vehicleId, plateText) {
+        const result = await prediction_service_1.predictionService.predictRoute(vehicleId);
+        if (!result.prediction) return;
+
+        await redis_1.redis.publish('prediction:update', JSON.stringify({
+            vehicleId,
+            plateNumber: plateText,
+            prediction: result.prediction,
+            vehicle: result.vehicle,
+            generatedAt: result.prediction.generatedAt,
+        }));
+
+        logger_1.logger.info('Auto-prediction broadcast for stolen vehicle', {
+            vehicleId,
+            plateText,
+            interceptionCount: result.prediction.interceptionPoints.length,
+        });
     }
 }
 exports.IntegrationService = IntegrationService;
