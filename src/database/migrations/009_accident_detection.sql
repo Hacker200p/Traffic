@@ -47,6 +47,4 @@ CREATE INDEX IF NOT EXISTS idx_accidents_detection_type ON accidents(detection_t
 CREATE INDEX IF NOT EXISTS idx_accidents_created_at ON accidents(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_accidents_location ON accidents(latitude, longitude);
 
--- Track migration
-INSERT INTO schema_migrations (version, name) VALUES (9, '009_accident_detection')
-ON CONFLICT (version) DO NOTHING;
+-- Done

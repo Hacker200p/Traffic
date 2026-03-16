@@ -20,6 +20,25 @@ export default function LiveMapPage() {
     const densityZones = useAppSelector((s) => s.analytics.densityZones);
     const alertItems = useAppSelector((s) => s.alerts.items);
     const alerts = useMemo(() => alertItems.filter((a) => a.location), [alertItems]);
+    const normalizedCameras = useMemo(() => cameras
+        .map((camera) => {
+        if (!camera)
+            return null;
+        const latitude = camera.location?.latitude ?? camera.latitude;
+        const longitude = camera.location?.longitude ?? camera.longitude;
+        if (latitude == null || longitude == null)
+            return null;
+        return {
+            ...camera,
+            type: camera.type ?? camera.cameraType ?? camera.camera_type ?? 'fixed',
+            isOnline: camera.isOnline ?? camera.is_online ?? false,
+            location: {
+                latitude: Number(latitude),
+                longitude: Number(longitude),
+            },
+        };
+    })
+        .filter(Boolean), [cameras]);
     // Layers toggles
     const [showVehicles, setShowVehicles] = useState(true);
     const [showCameras, setShowCameras] = useState(true);
@@ -48,7 +67,7 @@ export default function LiveMapPage() {
                                 ? 'bg-primary-600 text-white'
                                 : 'bg-dark-700 text-dark-400 hover:bg-dark-600'}`, children: layer.label }, layer.label))) })] }), _jsx("div", { className: "flex-1 overflow-hidden rounded-xl border border-dark-700", children: _jsxs(TrafficMap, { className: "h-full w-full", children: [showHeatmap && densityZones.length > 0 && (_jsx(CongestionHeatmap, { zones: densityZones })), showVehicles &&
                             livePositions.map((pos) => (_jsx(VehicleMarker, { record: pos, plateNumber: pos.plateNumber }, pos.vehicleId))), showCameras &&
-                            cameras.map((cam) => (_jsx(CameraMarker, { camera: cam }, cam.id))), showSignals &&
+                            normalizedCameras.map((cam) => (_jsx(CameraMarker, { camera: cam }, cam.id ?? `${cam.name}-${cam.location.latitude}-${cam.location.longitude}`))), showSignals &&
                             signals.filter((s) => s.location).map((sig) => (_jsx(SignalMarker, { signal: sig }, sig.id))), showAlerts &&
                             alerts.map((alert) => _jsx(AlertPopup, { alert: alert }, alert.id))] }) })] }));
 }

@@ -73,7 +73,17 @@ export function useWebSocket(enabled = true) {
         });
         socket.on('accident:critical', (data) => {
             toast.error(`⚠️ CRITICAL ACCIDENT: ${data.accident.description || 'Immediate response required'}`, { duration: 10000 });
-        });        return () => {
+        });
+        return () => {
+            socket.off('vehicle:update');
+            socket.off('signal:update');
+            socket.off('alert:new');
+            socket.off('violation:new');
+            socket.off('vehicle:stolen:spotted');
+            socket.off('prediction:update');
+            socket.off('accident:new');
+            socket.off('accident:update');
+            socket.off('accident:critical');
             wsService.disconnect();
             mounted.current = false;
         };

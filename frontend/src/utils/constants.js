@@ -1,6 +1,8 @@
 /* ── Application-wide constants ────────────────────────────────────────────── */
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api/v1';
-export const WS_URL = import.meta.env.VITE_WS_URL ?? 'http://localhost:3000';
+const envApiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').trim();
+const envWsUrl = (import.meta.env.VITE_WS_URL || '').trim();
+export const API_BASE_URL = envApiBaseUrl || 'http://localhost:3000/api/v1';
+export const WS_URL = envWsUrl || 'http://localhost:3000';
 export const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN ?? '';
 export const APP_NAME = import.meta.env.VITE_APP_NAME ?? 'Traffic Control System';
 // Default map center (override per deployment)

@@ -10,10 +10,51 @@ const initialState = {
     movementLoading: false,
     error: null,
 };
+const normalizeLivePosition = (position) => {
+    if (!position)
+        return null;
+    const latitude = position.location?.latitude ?? position.latitude;
+    const longitude = position.location?.longitude ?? position.longitude;
+    if (latitude == null || longitude == null)
+        return null;
+    const speed = position.speed == null ? null : Number(position.speed);
+    const heading = position.heading == null ? null : Number(position.heading);
+    return {
+        ...position,
+        vehicleId: position.vehicleId ?? position.vehicle_id,
+        plateNumber: position.plateNumber ?? position.plate_number,
+        vehicleType: position.vehicleType ?? position.vehicle_type,
+        speed: Number.isFinite(speed) ? speed : null,
+        heading: Number.isFinite(heading) ? heading : null,
+        timestamp: position.timestamp ?? position.recordedAt ?? position.recorded_at,
+        location: {
+            latitude: Number(latitude),
+            longitude: Number(longitude),
+        },
+    };
+};
+const normalizeCamera = (camera) => {
+    if (!camera)
+        return null;
+    const latitude = camera.location?.latitude ?? camera.latitude;
+    const longitude = camera.location?.longitude ?? camera.longitude;
+    if (latitude == null || longitude == null)
+        return null;
+    return {
+        ...camera,
+        type: camera.type ?? camera.cameraType ?? camera.camera_type ?? 'fixed',
+        isOnline: camera.isOnline ?? camera.is_online ?? false,
+        location: {
+            latitude: Number(latitude),
+            longitude: Number(longitude),
+        },
+    };
+};
 export const fetchLivePositions = createAsyncThunk('tracking/live', async (_, { rejectWithValue }) => {
     try {
         const { data } = await trackingApi.getLivePositions();
-        return data.data;
+        const positions = Array.isArray(data.data) ? data.data : [];
+        return positions.map(normalizeLivePosition).filter(Boolean);
     }
     catch {
         return rejectWithValue('Failed to fetch live positions');
@@ -40,7 +81,8 @@ export const fetchVehicleMovement = createAsyncThunk('tracking/movement', async 
 export const fetchCameras = createAsyncThunk('tracking/cameras', async (_, { rejectWithValue }) => {
     try {
         const { data } = await trackingApi.getCameras();
-        return data.data;
+        const cameras = Array.isArray(data.data) ? data.data : [];
+        return cameras.map(normalizeCamera).filter(Boolean);
     }
     catch {
         return rejectWithValue('Failed to fetch cameras');
@@ -51,12 +93,15 @@ const trackingSlice = createSlice({
     initialState,
     reducers: {
         updateLivePosition(state, action) {
-            const idx = state.livePositions.findIndex((p) => p.vehicleId === action.payload.vehicleId);
+            const normalized = normalizeLivePosition(action.payload);
+            if (!normalized)
+                return;
+            const idx = state.livePositions.findIndex((p) => p.vehicleId === normalized.vehicleId);
             if (idx !== -1) {
-                state.livePositions[idx] = action.payload;
+                state.livePositions[idx] = normalized;
             }
             else {
-                state.livePositions.push(action.payload);
+                state.livePositions.push(normalized);
             }
         },
         clearRoute(state) {

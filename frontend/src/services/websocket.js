@@ -3,9 +3,16 @@ import { WS_URL, LS_ACCESS_TOKEN } from '@/utils/constants';
 class WebSocketService {
     constructor() {
         this.socket = null;
+        this.subscribers = 0;
+        this.disconnectTimer = null;
     }
     connect() {
-        if (this.socket?.connected)
+        this.subscribers += 1;
+        if (this.disconnectTimer) {
+            clearTimeout(this.disconnectTimer);
+            this.disconnectTimer = null;
+        }
+        if (this.socket)
             return this.socket;
         const token = localStorage.getItem(LS_ACCESS_TOKEN);
         this.socket = io(WS_URL, {
@@ -28,8 +35,22 @@ class WebSocketService {
         return this.socket;
     }
     disconnect() {
-        this.socket?.disconnect();
-        this.socket = null;
+        this.subscribers = Math.max(0, this.subscribers - 1);
+        if (this.subscribers > 0)
+            return;
+        if (this.disconnectTimer) {
+            clearTimeout(this.disconnectTimer);
+        }
+        this.disconnectTimer = setTimeout(() => {
+            if (this.subscribers > 0)
+                return;
+            if (!this.socket)
+                return;
+            this.socket.off();
+            this.socket.disconnect();
+            this.socket = null;
+            this.disconnectTimer = null;
+        }, 300);
     }
     getSocket() {
         return this.socket;
