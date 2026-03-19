@@ -50,6 +50,32 @@ const normalizeCamera = (camera) => {
         },
     };
 };
+const normalizeRoutePoint = (point) => {
+    if (!point)
+        return null;
+    const latitude = point.location?.latitude ?? point.latitude;
+    const longitude = point.location?.longitude ?? point.longitude;
+    if (latitude == null || longitude == null)
+        return null;
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng))
+        return null;
+    const speed = point.speed == null ? null : Number(point.speed);
+    const heading = point.heading == null ? null : Number(point.heading);
+    return {
+        ...point,
+        vehicleId: point.vehicleId ?? point.vehicle_id,
+        plateNumber: point.plateNumber ?? point.plate_number,
+        speed: Number.isFinite(speed) ? speed : null,
+        heading: Number.isFinite(heading) ? heading : null,
+        timestamp: point.timestamp ?? point.recordedAt ?? point.recorded_at,
+        location: {
+            latitude: lat,
+            longitude: lng,
+        },
+    };
+};
 export const fetchLivePositions = createAsyncThunk('tracking/live', async (_, { rejectWithValue }) => {
     try {
         const { data } = await trackingApi.getLivePositions();
@@ -63,7 +89,8 @@ export const fetchLivePositions = createAsyncThunk('tracking/live', async (_, { 
 export const fetchVehicleRoute = createAsyncThunk('tracking/route', async ({ vehicleId, from, to }, { rejectWithValue }) => {
     try {
         const { data } = await trackingApi.getRoute(vehicleId, { from, to });
-        return data.data;
+        const routePoints = Array.isArray(data.data) ? data.data : [];
+        return routePoints.map(normalizeRoutePoint).filter(Boolean);
     }
     catch {
         return rejectWithValue('Failed to fetch vehicle route');

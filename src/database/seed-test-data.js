@@ -316,17 +316,20 @@ async function seedTestData() {
 
   // ── 9. Challans (e-Challans for confirmed violations) ───────
   let challanCount = 0;
+  const challanBatchTag = Date.now();
   for (let i = 0; i < violationIds.length; i++) {
     if (i >= 4) { // only for non-pending violations
       const chId = uuidv4();
       const v = violationData[i];
       const fineAmounts = { low: 100, medium: 500, high: 1000, critical: 2500 };
-      await db.query(
+      const challanNumber = `CHN-${new Date().getUTCFullYear()}-${challanBatchTag}-${String(i).padStart(3, "0")}`;
+      const challanResult = await db.query(
         `INSERT INTO challans (id, challan_number, violation_id, vehicle_id, plate_number, owner_name, violation_type, fine_amount, due_date, status, notification_channels, notification_status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+         ON CONFLICT (challan_number) DO NOTHING`,
         [
           chId,
-          `CHN-2024-${String(1000 + i).padStart(6, "0")}`,
+          challanNumber,
           violationIds[i],
           vMap[v.plate],
           v.plate,
@@ -339,7 +342,9 @@ async function seedTestData() {
           "sent",
         ]
       );
-      challanCount++;
+      if (challanResult.rowCount > 0) {
+        challanCount++;
+      }
     }
   }
   console.log(`✓ Created ${challanCount} challans`);

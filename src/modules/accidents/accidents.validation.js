@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.accidentQuerySchema = exports.collisionDetectSchema = exports.telemetryAnalyseSchema = exports.updateAccidentStatusSchema = exports.createAccidentSchema = void 0;
 const zod_1 = require("zod");
 
+const emptyToUndefined = (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value);
+
 const gpsPointSchema = zod_1.z.object({
     vehicleId: zod_1.z.string().uuid().optional(),
     latitude: zod_1.z.number().min(-90).max(90),
@@ -41,7 +43,7 @@ exports.collisionDetectSchema = zod_1.z.object({
 exports.accidentQuerySchema = zod_1.z.object({
     page: zod_1.z.coerce.number().int().positive().default(1),
     limit: zod_1.z.coerce.number().int().positive().max(100).default(20),
-    status: zod_1.z.enum(['detected', 'confirmed', 'dispatched', 'resolved', 'false_alarm']).optional(),
-    severity: zod_1.z.enum(['low', 'medium', 'high', 'critical']).optional(),
-    detectionType: zod_1.z.enum(['sudden_stop', 'collision', 'unusual_motion', 'manual_report']).optional(),
+    status: zod_1.z.preprocess(emptyToUndefined, zod_1.z.enum(['detected', 'confirmed', 'dispatched', 'resolved', 'false_alarm']).optional()),
+    severity: zod_1.z.preprocess(emptyToUndefined, zod_1.z.enum(['low', 'medium', 'high', 'critical']).optional()),
+    detectionType: zod_1.z.preprocess(emptyToUndefined, zod_1.z.enum(['sudden_stop', 'collision', 'unusual_motion', 'manual_report']).optional()),
 });

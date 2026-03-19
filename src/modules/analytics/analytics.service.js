@@ -160,44 +160,67 @@ class AnalyticsService {
     }
 
     /**
-     * Accident-prone zones — clusters alerts of type accident/congestion
-     * into spatial grid cells to identify hotspots.
+     * Accident-prone zones — clusters accident detections (plus congestion
+     * alerts as supplemental context) into spatial grid cells.
      */
     async getAccidentProneZones(query) {
         const days = parseInt(query.days || '90', 10);
         const gridSize = parseFloat(query.gridSize || '0.005');
-        const types = ['accident', 'congestion'];
         const result = await connection_1.db.query(`
+            WITH incident_points AS (
+                SELECT
+                    latitude,
+                    longitude,
+                    severity,
+                    'accident'::text AS incident_type
+                FROM accidents
+                WHERE created_at >= NOW() - make_interval(days => $1)
+                  AND status <> 'false_alarm'
+                  AND latitude IS NOT NULL AND longitude IS NOT NULL
+
+                UNION ALL
+
+                SELECT
+                    latitude,
+                    longitude,
+                    CASE
+                        WHEN priority IN ('critical', 'high') THEN 'high'
+                        ELSE 'medium'
+                    END AS severity,
+                    'congestion'::text AS incident_type
+                FROM alerts
+                WHERE created_at >= NOW() - make_interval(days => $1)
+                  AND type = 'congestion'
+                  AND latitude IS NOT NULL AND longitude IS NOT NULL
+            )
             SELECT
-                FLOOR(latitude  / $3) * $3   AS lat_cell,
-                FLOOR(longitude / $3) * $3   AS lng_cell,
-                COUNT(*)                     AS incident_count,
-                COUNT(*) FILTER (WHERE type = 'accident')   AS accident_count,
-                COUNT(*) FILTER (WHERE type = 'congestion')  AS congestion_count,
+                FLOOR(latitude  / $2) * $2 AS lat_cell,
+                FLOOR(longitude / $2) * $2 AS lng_cell,
+                COUNT(*) AS incident_count,
+                COUNT(*) FILTER (WHERE incident_type = 'accident') AS accident_count,
+                COUNT(*) FILTER (WHERE incident_type = 'congestion') AS congestion_count,
                 COUNT(*) FILTER (WHERE severity = 'critical' OR severity = 'high') AS severe_count
-            FROM alerts
-            WHERE created_at >= NOW() - make_interval(days => $1)
-              AND latitude IS NOT NULL AND longitude IS NOT NULL
-              AND type = ANY($2)
+            FROM incident_points
             GROUP BY lat_cell, lng_cell
-            HAVING COUNT(*) >= 2
-            ORDER BY incident_count DESC
+            HAVING COUNT(*) >= 1
+            ORDER BY incident_count DESC, severe_count DESC
             LIMIT 200
-        `, [days, types, gridSize]);
+        `, [days, gridSize]);
 
         return result.rows.map(r => {
             const lat = parseFloat(r.lat_cell);
             const lng = parseFloat(r.lng_cell);
             const count = parseInt(r.incident_count, 10);
+            const severeCount = parseInt(r.severe_count, 10);
             let risk = 'low';
-            if (count >= 10) risk = 'critical';
-            else if (count >= 5) risk = 'high';
-            else if (count >= 3) risk = 'medium';
+            if (count >= 7 || severeCount >= 4) risk = 'critical';
+            else if (count >= 4 || severeCount >= 2) risk = 'high';
+            else if (count >= 2) risk = 'medium';
             return {
                 incidentCount: count,
                 accidentCount: parseInt(r.accident_count, 10),
                 congestionCount: parseInt(r.congestion_count, 10),
-                severeCount: parseInt(r.severe_count, 10),
+                severeCount,
                 risk,
                 bounds: [
                     { latitude: lat, longitude: lng },

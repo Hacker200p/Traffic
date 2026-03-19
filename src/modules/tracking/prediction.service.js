@@ -242,7 +242,8 @@ class PredictionService {
         const maxLng = Math.max(...lngs) + margin;
 
         const result = await connection_1.db.query(
-            `SELECT id, name, intersection_name, latitude, longitude, direction, status
+            `SELECT id, name, intersection_name, latitude, longitude, direction,
+                    current_state AS status
              FROM traffic_signals
              WHERE latitude BETWEEN $1 AND $2
                AND longitude BETWEEN $3 AND $4`,

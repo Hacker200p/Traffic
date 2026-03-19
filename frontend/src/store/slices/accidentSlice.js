@@ -9,9 +9,19 @@ const initialState = {
     error: null,
 };
 
+function sanitizeParams(params = {}) {
+    return Object.fromEntries(
+        Object.entries(params).filter(([, value]) => {
+            if (value === null || value === undefined) return false;
+            if (typeof value === 'string' && value.trim() === '') return false;
+            return true;
+        })
+    );
+}
+
 export const fetchAccidents = createAsyncThunk('accidents/fetchAll', async (params, { rejectWithValue }) => {
     try {
-        const { data } = await accidentsApi.list(params);
+        const { data } = await accidentsApi.list(sanitizeParams(params));
         return data;
     } catch {
         return rejectWithValue('Failed to load accidents');
@@ -50,11 +60,15 @@ const accidentSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            .addCase(fetchAccidents.pending, (state) => { state.loading = true; })
+            .addCase(fetchAccidents.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
             .addCase(fetchAccidents.fulfilled, (state, { payload }) => {
                 state.loading = false;
                 state.items = payload.data;
                 state.total = payload.total ?? payload.data.length;
+                state.error = null;
             })
             .addCase(fetchAccidents.rejected, (state, { payload }) => {
                 state.loading = false;

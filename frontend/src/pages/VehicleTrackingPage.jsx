@@ -66,11 +66,23 @@ export default function VehicleTrackingPage() {
     // Convert movement route to RoutePolyline format
     const movementRoute = useMemo(() => {
         if (!movement?.route) return [];
-        return movement.route.map(p => ({
-            location: { latitude: p.latitude, longitude: p.longitude },
-            speed: p.speed,
-            timestamp: p.timestamp,
-        }));
+        return movement.route
+            .map(p => {
+            const latitude = p?.location?.latitude ?? p?.latitude;
+            const longitude = p?.location?.longitude ?? p?.longitude;
+            if (latitude == null || longitude == null)
+                return null;
+            const lat = Number(latitude);
+            const lng = Number(longitude);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng))
+                return null;
+            return {
+                location: { latitude: lat, longitude: lng },
+                speed: p.speed == null ? null : Number(p.speed),
+                timestamp: p.timestamp,
+            };
+        })
+            .filter(Boolean);
     }, [movement]);
     // Camera markers for visited cameras
     const visitedCameraMarkers = useMemo(() => {
