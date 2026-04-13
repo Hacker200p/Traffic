@@ -16,7 +16,9 @@ exports.createSignalSchema = zod_1.z.object({
     groupId: zod_1.z.string().uuid().optional(),
     cameraUrl: zod_1.z.string().url().optional(),
 });
-exports.updateSignalSchema = exports.createSignalSchema.partial();
+exports.updateSignalSchema = exports.createSignalSchema.partial().extend({
+    currentState: zod_1.z.enum(['green', 'yellow', 'red', 'flashing_red', 'flashing_yellow', 'off']).optional(),
+});
 exports.signalStateSchema = zod_1.z.object({
     state: zod_1.z.enum(['green', 'yellow', 'red', 'flashing_red', 'flashing_yellow', 'off']),
     duration: zod_1.z.number().int().positive().optional(),

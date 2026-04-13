@@ -76,7 +76,7 @@ class SignalsService {
             name: 'name', intersectionName: 'intersection_name', direction: 'direction', type: 'type',
             defaultGreenDuration: 'default_green_duration', defaultYellowDuration: 'default_yellow_duration',
             defaultRedDuration: 'default_red_duration', isAutonomous: 'is_autonomous',
-            groupId: 'group_id', cameraUrl: 'camera_url',
+            groupId: 'group_id', cameraUrl: 'camera_url', currentState: 'current_state',
         };
         const fields = [];
         const values = [];

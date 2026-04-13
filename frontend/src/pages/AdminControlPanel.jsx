@@ -50,18 +50,38 @@ export default function AdminControlPanel() {
 
     const loadPendingChallans = useCallback(async () => {
         setLoadingChallans(true);
-        try {
-            const [pendingRes, statsRes] = await Promise.all([
-                challansApi.getPending({ limit: 10 }),
-                challansApi.getStats(),
-            ]);
-            setPendingChallans(pendingRes.data.data || []);
-            setChallanStats(statsRes.data.data || null);
-        } catch {
-            toast.error('Failed to load challan data');
-        } finally {
-            setLoadingChallans(false);
+        const [pendingResult, statsResult] = await Promise.allSettled([
+            challansApi.getPending({ limit: 10 }),
+            challansApi.getStats(),
+        ]);
+
+        if (pendingResult.status === 'fulfilled') {
+            setPendingChallans(pendingResult.value.data.data || []);
+        } else {
+            setPendingChallans([]);
         }
+
+        if (statsResult.status === 'fulfilled') {
+            setChallanStats(statsResult.value.data.data || null);
+        } else {
+            setChallanStats(null);
+        }
+
+        const pendingStatus = pendingResult.status === 'rejected'
+            ? pendingResult.reason?.response?.status
+            : null;
+
+        // Do not show a hard error when pending list is forbidden for non-admin roles
+        // but stats can still be displayed.
+        const shouldToast =
+            (statsResult.status === 'rejected') ||
+            (pendingResult.status === 'rejected' && pendingStatus !== 403);
+
+        if (shouldToast) {
+            toast.error('Failed to load challan data');
+        }
+
+        setLoadingChallans(false);
     }, []);
 
     const loadActiveOverrides = useCallback(async () => {

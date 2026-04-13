@@ -28,7 +28,7 @@ const router = createBrowserRouter([
             { path: 'violations', element: _jsx(ViolationManagementPage, {}) },
             { path: 'analytics', element: _jsx(AnalyticsPage, {}) },
             { path: 'signals', element: _jsx(SignalsPage, {}) },
-            { path: 'admin', element: _jsx(AdminControlPanel, {}) },
+            { path: 'admin', element: _jsx(ProtectedRoute, { roles: ['admin'], children: _jsx(AdminControlPanel, {}) }) },
             { path: 'accidents', element: _jsx(AccidentDetectionPage, {}) },
             { path: 'predict-route', element: _jsx(PredictiveRoutePage, {}) },
         ],

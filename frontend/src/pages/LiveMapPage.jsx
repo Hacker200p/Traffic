@@ -19,7 +19,43 @@ export default function LiveMapPage() {
     const signals = useAppSelector((s) => s.signals.items);
     const densityZones = useAppSelector((s) => s.analytics.densityZones);
     const alertItems = useAppSelector((s) => s.alerts.items);
-    const alerts = useMemo(() => alertItems.filter((a) => a.location), [alertItems]);
+    const normalizedSignals = useMemo(() => signals
+        .map((signal) => {
+        if (!signal)
+            return null;
+        const latitude = signal.location?.latitude ?? signal.latitude;
+        const longitude = signal.location?.longitude ?? signal.longitude;
+        if (latitude == null || longitude == null)
+            return null;
+        return {
+            ...signal,
+            location: {
+                latitude: Number(latitude),
+                longitude: Number(longitude),
+            },
+            intersection: signal.intersection ?? signal.intersectionName,
+        };
+    })
+        .filter(Boolean), [signals]);
+    const alerts = useMemo(() => alertItems
+        .map((alert) => {
+        if (!alert)
+            return null;
+        const latitude = alert.location?.latitude ?? alert.latitude;
+        const longitude = alert.location?.longitude ?? alert.longitude;
+        if (latitude == null || longitude == null)
+            return null;
+        return {
+            ...alert,
+            location: {
+                latitude: Number(latitude),
+                longitude: Number(longitude),
+            },
+            message: alert.message ?? alert.description ?? '',
+            createdAt: alert.createdAt ?? alert.updatedAt,
+        };
+    })
+        .filter(Boolean), [alertItems]);
     const normalizedCameras = useMemo(() => cameras
         .map((camera) => {
         if (!camera)
@@ -49,11 +85,11 @@ export default function LiveMapPage() {
         dispatch(fetchLivePositions());
         dispatch(fetchCameras());
         dispatch(fetchSignals());
-        dispatch(fetchDensityZones());
+        dispatch(fetchDensityZones({ minutes: 1440 }));
         dispatch(fetchAlerts({ page: 1, limit: 50 }));
         const interval = setInterval(() => {
             dispatch(fetchLivePositions());
-            dispatch(fetchDensityZones());
+            dispatch(fetchDensityZones({ minutes: 1440 }));
         }, REFRESH_INTERVAL_LIVE);
         return () => clearInterval(interval);
     }, [dispatch]);
@@ -68,6 +104,6 @@ export default function LiveMapPage() {
                                 : 'bg-dark-700 text-dark-400 hover:bg-dark-600'}`, children: layer.label }, layer.label))) })] }), _jsx("div", { className: "flex-1 overflow-hidden rounded-xl border border-dark-700", children: _jsxs(TrafficMap, { className: "h-full w-full", children: [showHeatmap && densityZones.length > 0 && (_jsx(CongestionHeatmap, { zones: densityZones })), showVehicles &&
                             livePositions.map((pos) => (_jsx(VehicleMarker, { record: pos, plateNumber: pos.plateNumber }, pos.vehicleId))), showCameras &&
                             normalizedCameras.map((cam) => (_jsx(CameraMarker, { camera: cam }, cam.id ?? `${cam.name}-${cam.location.latitude}-${cam.location.longitude}`))), showSignals &&
-                            signals.filter((s) => s.location).map((sig) => (_jsx(SignalMarker, { signal: sig }, sig.id))), showAlerts &&
+                            normalizedSignals.map((sig) => (_jsx(SignalMarker, { signal: sig }, sig.id))), showAlerts &&
                             alerts.map((alert) => _jsx(AlertPopup, { alert: alert }, alert.id))] }) })] }));
 }

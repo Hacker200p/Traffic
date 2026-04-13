@@ -5,6 +5,7 @@ export const signalsApi = {
     updateState: (id, body) => api.post(`/signals/${id}/state`, body),
     setMode: (id, mode) => api.patch(`/signals/${id}`, {
         isAutonomous: mode === 'auto',
+        ...(mode === 'manual' ? { currentState: 'green' } : {}),
         ...(mode === 'emergency' ? { currentState: 'red' } : {}),
     }),
     getGroupSignals: (groupId) => api.get(`/signals/group/${groupId}`),
